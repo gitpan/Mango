@@ -1,0 +1,22 @@
+abstract: An ecommerce solution using Catalyst, Handel and DBIx::Class
+author: Christopher H. Laco
+distribution_type: module
+generated_by: Module::Install version 0.64
+license: perl
+name: Mango
+no_index: 
+  directory: 
+    - inc
+    - t
+requires: 
+  Class::Accessor::Grouped: 0.03
+  Class::Inspector: 0
+  DBIx::Class: 0.08
+  DateTime: 0
+  Error: 0
+  Handel: 1.00
+  Locale::Maketext: 0
+  Scalar::Util: 0
+  perl: 5.8.1
+tests: t/*.t t/*/*.t
+version: 0.01000_01
