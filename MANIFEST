@@ -57,6 +57,7 @@ lib/Mango/Wishlist.pm
 lib/Mango/Wishlist/Item.pm
 Makefile.PL
 MANIFEST
+MANIFEST.SKIP
 META.yml
 README
 t/exceptions.t

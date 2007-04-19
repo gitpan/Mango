@@ -1,9 +1,9 @@
-# $Id: /local/Mango/trunk/lib/Mango.pm 157 2007-04-17T01:33:19.824641Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango.pm 160 2007-04-19T02:13:30.308428Z claco  $
 package Mango;
 use strict;
 use warnings;
 
-our $VERSION = '0.01000_01';
+our $VERSION = '0.01000_02';
 
 1;
 __END__

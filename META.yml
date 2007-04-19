@@ -11,12 +11,12 @@ no_index:
 requires: 
   Class::Accessor::Grouped: 0.03
   Class::Inspector: 0
-  DBIx::Class: 0.08
+  DBIx::Class: 0.07999_02
   DateTime: 0
   Error: 0
-  Handel: 1.00
+  Handel: 0.99_18
   Locale::Maketext: 0
   Scalar::Util: 0
   perl: 5.8.1
 tests: t/*.t t/*/*.t
-version: 0.01000_01
+version: 0.01000_02
