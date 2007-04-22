@@ -1,5 +1,5 @@
 ## no critic
-# $Id: /local/Mango/trunk/lib/Mango/I18N/en.pm 155 2007-04-16T02:58:37.637652Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/I18N/en.pm 171 2007-04-22T23:07:08.321734Z claco  $
 package Mango::I18N::en;
 use strict;
 use warnings;
@@ -29,6 +29,8 @@ BEGIN {
         'Method not implemented!',
     COMPCLASS_NOT_LOADED =>
         'The component class [_1] [_2] could not be loaded: [_3]',
+    COMCLASS_NOT_SPECIFIED =>
+        'The component class [_1] was not specified',
     SCHEMA_SOURCE_NOT_SPECIFIED =>
         'No schema_source is specified!',
     SCHEMA_SOURCE_NOT_FOUND =>
@@ -66,7 +68,24 @@ __END__
 
 =head1 NAME
 
-Mango::I18N::en_us - Mango Language Pack: US English
+Mango::I18N::en - Mango Language Pack: English
+
+=head1 SYNOPSIS
+
+    use Mango::I18N qw/translate/;
+    
+    {
+        local $ENV{'LANG'} = 'en';
+        print translate('Hello');
+    };
+
+=head1 DESCRIPTION
+
+Mango::I18N::en contains all of the messages used in Mango in English.
+
+=head1 SEE ALSO
+
+L<Mango::I18N>
 
 =head1 AUTHOR
 

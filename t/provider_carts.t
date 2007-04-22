@@ -1,5 +1,5 @@
 #!perl -wT
-# $Id: /local/Mango/trunk/t/provider_carts.t 155 2007-04-16T02:58:37.637652Z claco  $
+# $Id: /local/Mango/trunk/t/provider_carts.t 169 2007-04-22T00:02:47.419841Z claco  $
 use strict;
 use warnings;
 
@@ -11,7 +11,7 @@ BEGIN {
     if($@) {
         plan skip_all => 'DBD::SQLite not installed';
     } else {
-        plan tests => 114;
+        plan tests => 122;
     };
 
     use_ok('Mango::Provider::Carts');
@@ -40,7 +40,7 @@ isa_ok($provider, 'Mango::Provider::Carts');
 ## get by id w/object
 {
     my $object = Mango::Object->new({
-       data => {id => 2} 
+       id => 2
     });
     my $cart = $provider->get_by_id($object);
     isa_ok($cart, 'Mango::Cart');
@@ -72,9 +72,7 @@ isa_ok($provider, 'Mango::Provider::Carts');
 ## get by user w/ object
 {
     my $user = Mango::User->new({
-        data => {
-            id => 1
-        }
+        id => 1
     });
     my @carts = $provider->search({ user => $user });
     is(scalar @carts, 1);
@@ -191,7 +189,7 @@ isa_ok($provider, 'Mango::Provider::Carts');
 ## create with user object
 {
     my $user = Mango::User->new({
-        data => {id => 23}
+        id => 23
     });
     my $current = DateTime->now;
     my $cart = $provider->create({
@@ -231,7 +229,7 @@ isa_ok($provider, 'Mango::Provider::Carts');
     is($provider->search->count, 5);
 
     $provider->delete({
-        user => Mango::User->new({data=>{id => 24}})
+        user => Mango::User->new({id => 24})
     });
 };
 
@@ -430,4 +428,64 @@ isa_ok($provider, 'Mango::Provider::Carts');
     } otherwise {
         fail('Other exception thrown');
     };
+};
+
+
+## user throws exception when user isn't a user object
+{
+    try {
+        local $ENV{'LANG'} = 'en';
+        my $cart = $provider->search->first;
+        $cart->user(bless {}, 'Junk');
+
+        fail('no exception thrown');
+    } catch Mango::Exception with {
+        pass('Argument exception thrown');
+        like(shift, qr/not a Mango::User/i, 'not a Mango::User');
+    } otherwise {
+        fail('Other exception thrown');
+    };
+};
+
+
+## user throws exception when no user is specified
+{
+    try {
+        local $ENV{'LANG'} = 'en';
+        my $cart = $provider->search->first;
+        $cart->user;
+
+        fail('no exception thrown');
+    } catch Mango::Exception with {
+        pass('Argument exception thrown');
+        like(shift, qr/no user was specified/i, 'no user specified');
+    } otherwise {
+        fail('Other exception thrown');
+    };
+};
+
+
+## Set user with object
+{
+    my $cart = $provider->search->first;
+    isa_ok($cart, 'Mango::Cart');
+
+    $cart->user(Mango::User->new({
+        id => 27
+    }));
+    $cart->update;
+
+    is(27, $provider->search->first->user_id);
+};
+
+
+## Set user with scalar
+{
+    my $cart = $provider->search->first;
+    isa_ok($cart, 'Mango::Cart');
+
+    $cart->user(42);
+    $cart->update;
+
+    is(42, $provider->search->first->user_id);
 };

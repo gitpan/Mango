@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/I18N.pm 150 2007-04-14T02:57:04.324056Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/I18N.pm 163 2007-04-20T02:21:55.419198Z claco  $
 package Mango::I18N;
 use strict;
 use warnings;
@@ -26,33 +26,34 @@ __END__
 
 =head1 NAME
 
-Mango::I18N - Localization module for Mango
+Mango::I18N - Message localization support for Mango
 
 =head1 SYNOPSIS
 
-    use Mango::I18N qw(translate);
+    use Mango::I18N qw/translate/;
     
     warn translate('This is my message');
 
 =head1 DESCRIPTION
 
-This module is simply a subclass of C<Locale::Maketext>. By default it doesn't
+Mango::I18N is the module responsible for message localization support in
+Mango. It is a subclass of C<Locale::Maketext>. By default it doesn't
 export anything. You can either use it directly:
 
     use Mango::I18N;
-
+    
     warn Mango::I18N::translate('My message');
 
-You can also export C<translate> into the callers namespace:
+or export L</translate> into the callers namespace:
 
     use Mango::I18N qw/translate/;
-
+    
     warn translate('My message');
 
 If you have the time and can do a language, the help would be much appreciated.
 If you're going to email a translation module, please Gzip it first. It's not
-uncommon for an email server along the way to trash UTF-8 characters in the
-.pm attachment text.
+uncommon for an email server or client along the way to trash UTF-8 characters
+in the .pm attachment text.
 
 =head1 FUNCTIONS
 
@@ -71,7 +72,7 @@ match is available, the original text is returned.
 
 =head1 SEE ALSO
 
-L<Locale::Maketext>, L<Mango::I18N::us_en>
+L<Locale::Maketext>, L<Mango::I18N::en>
 
 =head1 AUTHOR
 

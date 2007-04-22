@@ -1,5 +1,5 @@
 #!perl -w
-# $Id: /local/Mango/trunk/t/pod_spelling.t 150 2007-04-14T02:57:04.324056Z claco  $
+# $Id: /local/Mango/trunk/t/pod_spelling.t 167 2007-04-21T03:53:20.211692Z claco  $
 use strict;
 use warnings;
 
@@ -20,6 +20,8 @@ add_stopwords(<DATA>);
 all_pod_files_spelling_ok();
 
 __DATA__
+folksonomy
+UTC
 wishlists
 createdb
 behaviour

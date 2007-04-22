@@ -1,5 +1,5 @@
 #!perl -wT
-# $Id: /local/Mango/trunk/t/provider_products.t 155 2007-04-16T02:58:37.637652Z claco  $
+# $Id: /local/Mango/trunk/t/provider_products.t 169 2007-04-22T00:02:47.419841Z claco  $
 use strict;
 use warnings;
 
@@ -11,7 +11,7 @@ BEGIN {
     if($@) {
         plan skip_all => 'DBD::SQLite not installed';
     } else {
-        plan tests => 378;
+        plan tests => 381
     };
 
     use_ok('Mango::Provider::Products');
@@ -46,7 +46,7 @@ isa_ok($provider, 'Mango::Provider::Products');
 ## get by id w/object
 {
     my $object = Mango::Object->new({
-       data => {id => 2} 
+       id => 2
     });
     my $product = $provider->get_by_id($object);
     isa_ok($product, 'Mango::Product');
@@ -89,7 +89,7 @@ isa_ok($provider, 'Mango::Provider::Products');
 ## search with tags
 {
     my $tag2 = Mango::Tag->new({
-        data => {name => 'Tag2'}
+        name => 'Tag2'
     });
     my $products = $provider->search({
         tags => [qw/Tag1/, $tag2]
@@ -306,7 +306,7 @@ isa_ok($provider, 'Mango::Provider::Products');
 ## search for attributes
 {
     my $product = Mango::Product->new({
-        data => {id => 1}
+        id => 1
     });
 
     my $attributes = $provider->search_attributes($product->id, undef, {
@@ -335,7 +335,7 @@ isa_ok($provider, 'Mango::Provider::Products');
 ## search for attributes w/filter
 {
     my $product = Mango::Product->new({
-        data => {id => 1}
+        id => 1
     });
 
     my $attributes = $provider->search_attributes($product, {name => 'Attribute2'}, {
@@ -357,7 +357,7 @@ isa_ok($provider, 'Mango::Provider::Products');
 ## search for attributes w/filter return list
 {
     my $product = Mango::Product->new({
-        data => {id => 1}
+        id => 1
     });
 
     my @attributes = $provider->search_attributes($product, {name => 'Attribute2'});
@@ -375,7 +375,7 @@ isa_ok($provider, 'Mango::Provider::Products');
 ## search for attributes w/ nothing
 {
     my $product = Mango::Product->new({
-        data => {id => 233}
+        id => 233
     });
 
     my $attributes = $provider->search_attributes($product, {name => 'Attribute2'});
@@ -387,7 +387,7 @@ isa_ok($provider, 'Mango::Provider::Products');
 ## search for tags
 {
     my $product = Mango::Product->new({
-        data => {id => 1}
+        id => 1
     });
 
     my $tags = $provider->search_tags($product->id, undef, {
@@ -401,6 +401,7 @@ isa_ok($provider, 'Mango::Provider::Products');
     is($tag->id, 2);
     is($tag->name, 'Tag2');
     is($tag->created, '2004-07-04T12:00:00');
+    is($tag->count, 0);
 
     $tag = $tags->next;
     isa_ok($tag, 'Mango::Tag');
@@ -413,7 +414,7 @@ isa_ok($provider, 'Mango::Provider::Products');
 ## search for tags w/filter
 {
     my $product = Mango::Product->new({
-        data => {id => 1}
+        id => 1
     });
 
     my $tags = $provider->search_tags($product, {name => 'Tag2'});
@@ -431,7 +432,7 @@ isa_ok($provider, 'Mango::Provider::Products');
 ## search for tags w/ nothing
 {
     my $product = Mango::Product->new({
-        data => {id => 233}
+        id => 233
     });
 
     my $tags = $provider->search_tags($product, {name => 'Tag1'});
@@ -516,7 +517,7 @@ isa_ok($provider, 'Mango::Provider::Products');
             {name => 'CreatedAttribute1', value => 'CreatedValue1'},
             {name => 'CreatedAttribute2', value => 'CreatedValue2'},
             Mango::Attribute->new({
-                data => {name => 'CreatedAttribute3', value => 'CreatedValue3'}
+                name => 'CreatedAttribute3', value => 'CreatedValue3'
             })
         ],
         tags => [
@@ -525,7 +526,7 @@ isa_ok($provider, 'Mango::Provider::Products');
             'Tag2',
             {name => 'CreatedTag2'},
             Mango::Tag->new({
-                data => {name => 'CreatedTag3'}
+                name => 'CreatedTag3'
             })
         ]
     });
@@ -543,21 +544,21 @@ isa_ok($provider, 'Mango::Provider::Products');
 
     my $attribute = $attributes->next;
     isa_ok($attribute, 'Mango::Attribute');
-    is($attribute->data->{'product_id'}, 4);
+    is($attribute->{'product_id'}, 4);
     is($attribute->name, 'CreatedAttribute1');
     is($attribute->value, 'CreatedValue1');
     cmp_ok($attribute->created->epoch, '>=', $current->epoch);
 
     $attribute = $attributes->next;
     isa_ok($attribute, 'Mango::Attribute');
-    is($attribute->data->{'product_id'}, 4);
+    is($attribute->{'product_id'}, 4);
     is($attribute->name, 'CreatedAttribute2');
     is($attribute->value, 'CreatedValue2');
     cmp_ok($attribute->created->epoch, '>=', $current->epoch);
 
     $attribute = $attributes->next;
     isa_ok($attribute, 'Mango::Attribute');
-    is($attribute->data->{'product_id'}, 4);
+    is($attribute->{'product_id'}, 4);
     is($attribute->name, 'CreatedAttribute3');
     is($attribute->value, 'CreatedValue3');
     cmp_ok($attribute->created->epoch, '>=', $current->epoch);
@@ -594,7 +595,7 @@ isa_ok($provider, 'Mango::Provider::Products');
 
     $attribute = $attributes->next;
     isa_ok($attribute, 'Mango::Attribute');
-    is($attribute->data->{'product_id'}, 4);
+    is($attribute->{'product_id'}, 4);
     is($attribute->name, 'CreatedAttribute3');
     is($attribute->value, 'CreatedValue3');
     cmp_ok($attribute->created->epoch, '>=', $current->epoch);
@@ -655,7 +656,7 @@ isa_ok($provider, 'Mango::Provider::Products');
 
     $attribute = $attributes->next;
     isa_ok($attribute, 'Mango::Attribute');
-    is($attribute->data->{'product_id'}, 5);
+    is($attribute->{'product_id'}, 5);
     is($attribute->name, 'CreatedAttribute1');
     is($attribute->value, 'CreatedValue1');
     cmp_ok($attribute->created->epoch, '>=', $current->epoch);
@@ -663,21 +664,21 @@ isa_ok($provider, 'Mango::Provider::Products');
     my @attributes = $product->add_attributes(
         {name => 'CreatedAttribute2', value => 'CreatedValue2'},
         Mango::Attribute->new({
-            data => {name => 'CreatedAttribute3', value => 'CreatedValue3'}
+            name => 'CreatedAttribute3', value => 'CreatedValue3'
         })
     );
     is(scalar @attributes, 2);
 
     $attribute = $attributes[0];
     isa_ok($attribute, 'Mango::Attribute');
-    is($attribute->data->{'product_id'}, 5);
+    is($attribute->{'product_id'}, 5);
     is($attribute->name, 'CreatedAttribute2');
     is($attribute->value, 'CreatedValue2');
     cmp_ok($attribute->created->epoch, '>=', $current->epoch);
 
     $attribute = $attributes[1];
     isa_ok($attribute, 'Mango::Attribute');
-    is($attribute->data->{'product_id'}, 5);
+    is($attribute->{'product_id'}, 5);
     is($attribute->name, 'CreatedAttribute3');
     is($attribute->value, 'CreatedValue3');
     cmp_ok($attribute->created->epoch, '>=', $current->epoch);
@@ -688,21 +689,21 @@ isa_ok($provider, 'Mango::Provider::Products');
 
     $attribute = $attributes->next;
     isa_ok($attribute, 'Mango::Attribute');
-    is($attribute->data->{'product_id'}, 5);
+    is($attribute->{'product_id'}, 5);
     is($attribute->name, 'CreatedAttribute1');
     is($attribute->value, 'CreatedValue1');
     cmp_ok($attribute->created->epoch, '>=', $current->epoch);
 
     $attribute = $attributes->next;
     isa_ok($attribute, 'Mango::Attribute');
-    is($attribute->data->{'product_id'}, 5);
+    is($attribute->{'product_id'}, 5);
     is($attribute->name, 'CreatedAttribute2');
     is($attribute->value, 'CreatedValue2');
     cmp_ok($attribute->created->epoch, '>=', $current->epoch);
 
     $attribute = $attributes->next;
     isa_ok($attribute, 'Mango::Attribute');
-    is($attribute->data->{'product_id'}, 5);
+    is($attribute->{'product_id'}, 5);
     is($attribute->name, 'CreatedAttribute3');
     is($attribute->value, 'CreatedValue3');
     cmp_ok($attribute->created->epoch, '>=', $current->epoch);
@@ -760,12 +761,10 @@ isa_ok($provider, 'Mango::Provider::Products');
     );
 
     my $product = Mango::Product->new({
-        data => {
-            id => 4,
-            name => 'updatedproduct4',
-            description => 'UpdatedProduct4',
-            created  => $date
-        }
+        id => 4,
+        name => 'updatedproduct4',
+        description => 'UpdatedProduct4',
+        created  => $date
     });
 
     ok($provider->update($product));
@@ -794,12 +793,12 @@ isa_ok($provider, 'Mango::Provider::Products');
     );
 
     my $product = Mango::Product->new({
-        provider => $provider,
-        data => {
-            id => 3,
-            name => 'updatedproduct3',
-            description => 'UpdatedProduct3',
-            created  => $date
+        id => 3,
+        name => 'updatedproduct3',
+        description => 'UpdatedProduct3',
+        created  => $date,
+        meta => {
+            provider => $provider
         }
     });
     ok($product->update);
@@ -848,9 +847,7 @@ isa_ok($provider, 'Mango::Provider::Products');
 ## delete using object
 {
     my $product = Mango::Product->new({
-        data => {
-            id => 2
-        }
+        id => 2
     });
     ok($provider->delete($product));
     is($provider->search->count, 2);
@@ -861,9 +858,9 @@ isa_ok($provider, 'Mango::Provider::Products');
 ## delete on result object
 {
     my $product = Mango::Product->new({
-        provider => $provider,
-        data => {
-            id => 1
+        id => 1,
+        meta => {
+            provider => $provider
         }
     });
     ok($product->destroy);
@@ -1035,6 +1032,22 @@ isa_ok($provider, 'Mango::Provider::Products');
     } catch Mango::Exception with {
         pass('Argument exception thrown');
         like(shift, qr/not a Mango::Product/i, 'not a Mango::Product');
+    } otherwise {
+        fail('Other exception thrown');
+    };
+};
+
+
+## tag destroy throw exception
+{
+    try {
+        local $ENV{'LANG'} = 'en';
+        $provider->search->first->tags->first->destroy;
+
+        fail('no exception thrown');
+    } catch Mango::Exception with {
+        pass('Argument exception thrown');
+        like(shift, qr/not implemented/i, 'method not implemented');
     } otherwise {
         fail('Other exception thrown');
     };

@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Provider/Roles.pm 155 2007-04-16T02:58:37.637652Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/Provider/Roles.pm 167 2007-04-21T03:53:20.211692Z claco  $
 package Mango::Provider::Roles;
 use strict;
 use warnings;
@@ -20,7 +20,7 @@ sub add_users {
         if ($role->isa('Mango::Role')) {
             $role = $role->id;
         } else {
-            throw Mango::Exception('NOT_A_ROLE');
+            Mango::Exception->throw('NOT_A_ROLE');
         };
     };
 
@@ -29,7 +29,7 @@ sub add_users {
             if ($user->isa('Mango::User')) {
                 $user = $user->id;
             } else {
-                throw Mango::Exception('NOT_A_USER');
+                Mango::Exception->throw('NOT_A_USER');
             };
         };
 
@@ -49,7 +49,7 @@ sub remove_users {
         if ($role->isa('Mango::Role')) {
             $role = $role->id;
         } else {
-            throw Mango::Exception('NOT_A_ROLE');
+            Mango::Exception->throw('NOT_A_ROLE');
         };
     };
 
@@ -59,7 +59,7 @@ sub remove_users {
             if ($user->isa('Mango::User')) {
                 push @ids, $user->id;
             } else {
-                throw Mango::Exception('NOT_A_USER');
+                Mango::Exception->throw('NOT_A_USER');
             };
         } else {
             push @ids, $user;
@@ -82,7 +82,7 @@ sub search {
             if ($user->isa('Mango::User')) {
                 $filter->{'user.id'} = $user->id;
             } else {
-                throw Mango::Exception('NOT_A_USER');
+                Mango::Exception->throw('NOT_A_USER');
             };
         } else {
             $filter->{'user.id'} = $user;

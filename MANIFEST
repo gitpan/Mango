@@ -19,9 +19,9 @@ lib/Mango/Currency.pm
 lib/Mango/Exception.pm
 lib/Mango/I18N.pm
 lib/Mango/I18N/en.pm
-lib/Mango/I18N/ru.pm
 lib/Mango/Iterator.pm
 lib/Mango/Object.pm
+lib/Mango/Object/Meta.pm
 lib/Mango/Order.pm
 lib/Mango/Order/Item.pm
 lib/Mango/Product.pm
@@ -63,7 +63,9 @@ README
 t/exceptions.t
 t/iterator.t
 t/lib/Mango/Test.pm
+t/lib/Mango/Test/Meta.pm
 t/lib/Mango/Test/Schema.pm
+t/object.t
 t/pod_coverage.t
 t/pod_spelling.t
 t/pod_syntax.t
@@ -77,3 +79,4 @@ t/provider_roles.t
 t/provider_users.t
 t/provider_wishlists.t
 t/sql/test.sqlite.sql
+TODO
