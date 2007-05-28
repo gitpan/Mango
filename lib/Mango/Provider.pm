@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Provider.pm 167 2007-04-21T03:53:20.211692Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/Provider.pm 200 2007-05-17T23:25:51.613872Z claco  $
 package Mango::Provider;
 use strict;
 use warnings;
@@ -73,7 +73,13 @@ sub setup {
     my ($self, $args) = @_;
 
     if (ref $args eq 'HASH') {
-        map {$self->$_($args->{$_})} keys %{$args};
+        map {
+            if ($self->can($_)) {
+                $self->$_($args->{$_})
+            } else {
+                $self->{$_}  = $args->{$_};
+            }
+        } keys %{$args};
     };
 
     return;

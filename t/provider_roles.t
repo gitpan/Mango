@@ -1,5 +1,5 @@
 #!perl -wT
-# $Id: /local/Mango/trunk/t/provider_roles.t 167 2007-04-21T03:53:20.211692Z claco  $
+# $Id: /local/Mango/trunk/t/provider_roles.t 201 2007-05-18T00:32:53.066436Z claco  $
 use strict;
 use warnings;
 
@@ -22,7 +22,9 @@ BEGIN {
 
 my $schema = Mango::Test->init_schema;
 my $provider = Mango::Provider::Roles->new({
-    connection_info => [$schema->dsn]
+    #connection_info => [$schema->dsn]
+    #use faster test schema
+    schema => $schema
 });
 isa_ok($provider, 'Mango::Provider::Roles');
 

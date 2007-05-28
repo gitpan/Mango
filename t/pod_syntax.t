@@ -1,5 +1,5 @@
 #!perl -wT
-# $Id: /local/Mango/trunk/t/pod_syntax.t 150 2007-04-14T02:57:04.324056Z claco  $
+# $Id: /local/Mango/trunk/t/pod_syntax.t 191 2007-05-14T22:43:34.211569Z claco  $
 use strict;
 use warnings;
 
@@ -7,7 +7,7 @@ BEGIN {
     use lib 't/lib';
     use Mango::Test;
 
-    plan skip_all => 'set TEST_POD to enable this test' unless $ENV{TEST_POD};
+    plan skip_all => 'set TEST_AUTHOR to enable this test' unless $ENV{TEST_AUTHOR};
 
     eval 'use Test::Pod 1.00';
     plan skip_all => 'Test::Pod 1.00 not installed' if $@;

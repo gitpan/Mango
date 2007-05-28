@@ -1,5 +1,5 @@
 #!perl -wT
-# $Id: /local/Mango/trunk/t/pod_coverage.t 150 2007-04-14T02:57:04.324056Z claco  $
+# $Id: /local/Mango/trunk/t/pod_coverage.t 259 2007-05-28T05:46:50.036668Z claco  $
 use strict;
 use warnings;
 
@@ -7,7 +7,7 @@ BEGIN {
     use lib 't/lib';
     use Mango::Test;
 
-    plan skip_all => 'set TEST_POD to enable this test' unless $ENV{TEST_POD};
+    plan skip_all => 'set TEST_AUTHOR to enable this test' unless $ENV{TEST_AUTHOR};
 
     eval 'use Test::Pod::Coverage 1.04';
     plan skip_all => 'Test::Pod::Coverage 1.04' if $@;
@@ -18,7 +18,7 @@ BEGIN {
 
 my $trustme = {
     trustme =>
-    [qr/^(COMPONENT|destroy|setup|create_result|type|save)$/]
+    [qr/^(COMPONENT|destroy|setup|create_result|type|save|begin)$/]
 };
 
 all_pod_coverage_ok($trustme);

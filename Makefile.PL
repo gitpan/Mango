@@ -1,4 +1,7 @@
-use inc::Module::Install;
+# $Id: /local/Mango/trunk/Makefile.PL 263 2007-05-28T14:10:22.795280Z claco  $
+use strict;
+use warnings;
+use inc::Module::Install 0.65;
 
 name 'Mango';
 license 'perl';
@@ -8,22 +11,41 @@ all_from 'lib/Mango.pm';
 requires 'Handel' => '0.99_18';
 requires 'DBIx::Class' => '0.07999_02';
 requires 'Class::Accessor::Grouped' => '0.03';
+requires 'Clone';
+requires 'FormValidator::Simple' => '0.17';
+requires 'CGI::FormBuilder';
 requires 'DateTime';
 requires 'Error';
 requires 'Locale::Maketext';
 requires 'Scalar::Util';
 requires 'Class::Inspector';
-#requires 'Catalyst' => '5.7007';
-#requires 'Catalyst::Plugin::ConfigLoader';
-#requires 'Catalyst::Plugin::Static::Simple';
-#requires 'Catalyst::Action::RenderView';
-#requires 'YAML';
-#catalyst;
+requires 'Path::Class';
+requires 'I18N::LangTags';
+requires 'I18N::LangTags::Detect';
+requires 'MIME::Types';
+requires 'Catalyst' => '5.7007';
+requires 'Catalyst::Plugin::ConfigLoader';
+requires 'Catalyst::Plugin::Static::Simple';
+requires 'Catalyst::Action::RenderView';
+requires 'Catalyst::Action::REST' => '0.40';
+requires 'Catalyst::Plugin::Authentication' => '0.09999';
+requires 'XML::Feed' => '0.12';
+requires 'XML::Atom' => '0.25';
+requires 'XML::RSS' => '1.22';
+requires 'YAML';
+catalyst;
+
+build_requires 'Directory::Scratch';
 
 tests('t/*.t t/*/*.t');
 clean_files "t/var";
 
 install_script glob('script/*.pl');
+install_share;
+
+eval {
+    system 'pod2text lib/Mango.pm > README';
+};
 
 auto_install;
 WriteAll;

@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Provider/DBIC.pm 167 2007-04-21T03:53:20.211692Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/Provider/DBIC.pm 233 2007-05-22T03:00:04.521598Z claco  $
 package Mango::Provider::DBIC;
 use strict;
 use warnings;
@@ -18,12 +18,6 @@ BEGIN {
         _resultset
         _schema
     /);
-
-    *DBIx::Class::Row::get_inflated_columns = sub {
-        my $self = shift;
-
-        return map {$_ => $self->$_} $self->columns;
-    };
 };
 __PACKAGE__->schema_class('Mango::Schema');
 __PACKAGE__->updated_column('updated');

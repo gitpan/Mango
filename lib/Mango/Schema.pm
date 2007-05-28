@@ -1,12 +1,32 @@
-# $Id: /local/Mango/trunk/lib/Mango/Schema.pm 150 2007-04-14T02:57:04.324056Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/Schema.pm 203 2007-05-18T01:49:50.686248Z claco  $
 package Mango::Schema;
 use strict;
 use warnings;
 
 BEGIN {
     use base qw/DBIx::Class::Schema/;
+
+    use Mango::Exception ();
 };
 __PACKAGE__->load_classes;
+
+sub connect {
+    my ($class, $dsn, $user, $password, $attr) = @_;
+
+    $attr ||= {
+        AutoCommit => 1
+    };
+
+    my $schema = $class->next::method($dsn, $user, $password, $attr);
+
+    $schema->exception_action(
+        sub {
+            Mango::Exception->throw(shift);
+        }
+    );
+
+    return $schema;
+};
 
 1;
 __END__
@@ -24,6 +44,19 @@ Mango::Schema - Schema class for Mango
 =head1 DESCRIPTION
 
 Mango::Schema is the schema classes used to interact with the database.
+
+=head1 METHODS
+
+=head2 connect
+
+=over
+
+=item Arguments: $dsn, $user, $password, \%attr
+
+=back
+
+Creates a new schema instance and uses Mango::Exception to catch all
+db related errors.
 
 =head1 AUTHOR
 

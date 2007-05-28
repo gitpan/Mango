@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/t/lib/Mango/Test.pm 150 2007-04-14T02:57:04.324056Z claco  $
+# $Id: /local/Mango/trunk/t/lib/Mango/Test.pm 188 2007-05-13T01:32:44.532827Z claco  $
 package Mango::Test;
 use strict;
 use warnings;
@@ -45,7 +45,7 @@ sub init_schema {
     mkdir($db_dir) unless -d $db_dir;
 
     my $dsn = 'dbi:SQLite:' . $db;
-    my $schema = Mango::Test::Schema->compose_namespace($namespace)->connect($dsn);
+    my $schema = Mango::Test::Schema->compose_namespace($namespace)->connect($dsn, undef, undef, {AutoCommit => 1});
     $schema->storage->on_connect_do([
         'PRAGMA synchronous = OFF',
         'PRAGMA temp_store = MEMORY'

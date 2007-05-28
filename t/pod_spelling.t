@@ -1,5 +1,5 @@
 #!perl -w
-# $Id: /local/Mango/trunk/t/pod_spelling.t 167 2007-04-21T03:53:20.211692Z claco  $
+# $Id: /local/Mango/trunk/t/pod_spelling.t 259 2007-05-28T05:46:50.036668Z claco  $
 use strict;
 use warnings;
 
@@ -7,7 +7,7 @@ BEGIN {
     use lib 't/lib';
     use Mango::Test;
 
-    plan skip_all => 'set TEST_POD to enable this test' unless $ENV{TEST_POD};
+    plan skip_all => 'set TEST_AUTHOR to enable this test' unless $ENV{TEST_AUTHOR};
 
     eval 'use Test::Spelling 0.11';
     plan skip_all => 'Test::Spelling 0.11 not installed' if $@;
@@ -20,6 +20,18 @@ add_stopwords(<DATA>);
 all_pod_files_spelling_ok();
 
 __DATA__
+yml
+validator
+CGI
+FormBuilder
+loc
+lang
+langs
+RSS
+Atom
+AnonymousUser
+CachedUser
+XHTML
 folksonomy
 UTC
 wishlists

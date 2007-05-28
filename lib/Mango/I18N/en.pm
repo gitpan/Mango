@@ -1,5 +1,5 @@
 ## no critic
-# $Id: /local/Mango/trunk/lib/Mango/I18N/en.pm 171 2007-04-22T23:07:08.321734Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/I18N/en.pm 220 2007-05-18T21:51:46.382788Z claco  $
 package Mango::I18N::en;
 use strict;
 use warnings;
@@ -40,7 +40,7 @@ BEGIN {
     PROVIDER_CLASS_NOT_SPECIFIED =>
         'No provider class is specified!',
     PROVIDER_CLASS_NOT_LOADED =>
-        'The provider [_1] could not be loaded: [_2]!',
+        "The provider '[_1]' could not be loaded: [_2]!",
     NOT_A_ROLE =>
         'The object is not a Mango::Role object',
     NOT_A_USER =>
@@ -61,6 +61,16 @@ BEGIN {
         'The object is not a Mango::Profile object',
     NO_USER_SPECIFIED =>
         'No user was specified',
+    MODEL_NOT_FOUND =>
+        "The model requested '[_1]' could not be found",
+    FEED_NOT_FOUND =>
+        'No feed data was specified',
+    FEED_TYPE_NOT_SPECIFIED =>
+        'No feed type was apsecified',
+    REALM_NOT_FOUND =>
+        'The realm \'mango\' could not be found',
+    REALM_NOT_MANGO =>
+        'The default realm is not \'mango\'',
 );
 
 1;
@@ -73,7 +83,7 @@ Mango::I18N::en - Mango Language Pack: English
 =head1 SYNOPSIS
 
     use Mango::I18N qw/translate/;
-    
+
     {
         local $ENV{'LANG'} = 'en';
         print translate('Hello');
