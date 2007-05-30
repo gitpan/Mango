@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Form.pm 259 2007-05-28T05:46:50.036668Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/Form.pm 312 2007-05-30T14:59:33.006810Z claco  $
 package Mango::Form;
 use strict;
 use warnings;
@@ -14,7 +14,7 @@ BEGIN {
     use Clone ();
     use YAML ();
 
-    __PACKAGE__->mk_group_accessors('simple', qw/messages profile validator _form localizer _unique/);
+    __PACKAGE__->mk_group_accessors('simple', qw/labels messages profile validator _form localizer _unique/);
 };
 
 sub new {
@@ -23,6 +23,7 @@ sub new {
     my $source = $args->{'source'} || {};
 
     my $self = bless {
+        labels => $args->{'labels'} || {},
         messages => $args->{'messages'} || {},
         profile => $args->{'profile'} || [],
         validator => $args->{'validator'} || FormValidator::Simple->new,
@@ -43,6 +44,22 @@ sub field {
 
 sub action {
     return shift->_form->action(@_);
+};
+
+sub render {
+    my $self = shift;
+    my $form = $self->_form;
+
+    foreach my $field ($form->fields) {
+        $field->label(
+            $self->localizer->($self->labels->{$field->name}, $field->name)
+        );
+    };
+    $form->submit(
+        $self->localizer->($self->labels->{'submit'})
+    );
+
+    return $form->render(@_);
 };
 
 sub values {
@@ -67,8 +84,8 @@ sub parse {
         Mango::Exception->throw('UNKNOWN_FORM_SOURCE');
     };
 
-    my $fields = $config->{'fields'};
-    my $field_order = $config->{'field_order'};
+    my $fields = delete $config->{'fields'};
+    my $field_order = delete $config->{'field_order'};
     $self->_form(
         CGI::FormBuilder->new(%{$config})
     );
@@ -79,7 +96,10 @@ sub parse {
         my $constraints = delete $field->{'constraints'};
         my $errors = delete $field->{'messages'};
 
-        $self->_form->field($name,
+        $self->labels->{$name} = $label;
+
+        $self->_form->field(
+            name => $name,
             label => $label,
             %{$field}
         );
@@ -113,6 +133,8 @@ sub parse {
     };
     
     $self->_form->submit('LABEL_SUBMIT') unless $config->{'submit'};
+    $self->labels->{'submit'} = $config->{'submit'} || 'LABEL_SUBMIT';
+
     $self->validator->set_messages({'.' => $self->messages});
 
     return;
@@ -441,13 +463,9 @@ constraints and messages.
 C<source> can be either a string containing the configuration file name,
 or a hash reference containing the same data structure.
 
-=head2 process
+=head2 render
 
-Creates an XML::Feed of the specific type, writes it to the response body,
-and changes the content type. There is usually no reason to call this method
-directly. Forward to this view instead:
-
-    $c->forward($c->view('Atom'));
+Returns the html source for the current form.
 
 =head2 submitted
 

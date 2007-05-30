@@ -1,0 +1,34 @@
+# $Id: /local/Mango/trunk/share/forms/admin/products/attributes/edit.yml 308 2007-05-29T13:08:41.522340Z claco  $
+---
+name: attributes_edit
+method: POST
+javascript: 0
+stylesheet: 1
+sticky: 1
+submit: LABEL_UPDATE
+fields:
+  - id:
+      type: hidden
+      force: 1
+      constraints:
+        - NOT_BLANK
+        - UINT
+  - name:
+      type: text
+      size: 25
+      maxlength: 25
+      constraints:
+        - NOT_BLANK
+        - LENGTH, 1, 25
+        - UNIQUE
+  - value:
+      type: text
+      size: 50
+      maxlength: 255
+      constraints:
+        - NOT_BLANK
+        - LENGTH, 1, 255
+  - created:
+      type: text
+      size: 20
+      disabled: 1

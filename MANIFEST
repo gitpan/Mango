@@ -87,8 +87,14 @@ MANIFEST			This list of files
 MANIFEST.SKIP
 META.yml
 README
+share/forms/admin/products/attributes/create.yml
+share/forms/admin/products/attributes/edit.yml
 share/forms/admin/products/create.yml
 share/forms/admin/products/edit.yml
+share/forms/admin/roles/create.yml
+share/forms/admin/roles/edit.yml
+share/forms/admin/users/create.yml
+share/forms/admin/users/edit.yml
 t/catalyst/controller_form.t
 t/catalyst/controller_rest.t
 t/catalyst/model_carts.t
@@ -112,6 +118,7 @@ t/form.t
 t/iterator.t
 t/lib/Mango/Test.pm
 t/lib/Mango/Test/Catalyst.pm
+t/lib/Mango/Test/Catalyst/Action.pm
 t/lib/Mango/Test/Catalyst/I18N.pm
 t/lib/Mango/Test/Catalyst/I18N/en.pm
 t/lib/Mango/Test/Catalyst/L10N.pm

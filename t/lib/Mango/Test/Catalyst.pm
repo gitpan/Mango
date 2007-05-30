@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/t/lib/Mango/Test/Catalyst.pm 255 2007-05-27T20:19:34.485950Z claco  $
+# $Id: /local/Mango/trunk/t/lib/Mango/Test/Catalyst.pm 313 2007-05-30T16:16:45.407876Z claco  $
 package Mango::Test::Catalyst;
 use strict;
 use warnings;
@@ -12,6 +12,7 @@ BEGIN {
     use Mango::Test::Catalyst::Response;
     use Mango::Test::Catalyst::Log;
     use Mango::Test::Catalyst::Session;
+    use Mango::Test::Catalyst::Action;
 
     __PACKAGE__->mk_group_accessors('simple', qw/action/);
 };
@@ -25,6 +26,7 @@ sub new {
     $args->{'session'} ||= {};
     $args->{'request'} ||= {};
     $args->{'response'} ||= {};
+    $args->{'action'} = Mango::Test::Catalyst::Action->new;
 
     return bless $args, $class;
 };

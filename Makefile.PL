@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/Makefile.PL 263 2007-05-28T14:10:22.795280Z claco  $
+# $Id: /local/Mango/trunk/Makefile.PL 308 2007-05-29T13:08:41.522340Z claco  $
 use strict;
 use warnings;
 use inc::Module::Install 0.65;
@@ -14,6 +14,7 @@ requires 'Class::Accessor::Grouped' => '0.03';
 requires 'Clone';
 requires 'FormValidator::Simple' => '0.17';
 requires 'CGI::FormBuilder';
+requires 'File::ShareDir';
 requires 'DateTime';
 requires 'Error';
 requires 'Locale::Maketext';

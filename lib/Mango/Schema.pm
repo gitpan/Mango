@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Schema.pm 203 2007-05-18T01:49:50.686248Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/Schema.pm 255 2007-05-18T13:39:32.588551Z CLaco  $
 package Mango::Schema;
 use strict;
 use warnings;

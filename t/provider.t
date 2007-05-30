@@ -1,5 +1,5 @@
 #!perl -wT
-# $Id: /local/Mango/trunk/t/provider.t 155 2007-04-16T02:58:37.637652Z claco  $
+# $Id: /local/Mango/trunk/t/provider.t 128 2007-04-16T02:55:17.221512Z claco  $
 use strict;
 use warnings;
 

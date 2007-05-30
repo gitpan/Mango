@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/share/forms/admin/products/edit.yml 255 2007-05-27T20:19:34.485950Z claco  $
+# $Id: /local/Mango/trunk/share/forms/admin/products/edit.yml 308 2007-05-29T13:08:41.522340Z claco  $
 ---
 name: products_edit
 method: POST

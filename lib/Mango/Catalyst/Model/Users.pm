@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Model/Users.pm 200 2007-05-17T23:25:51.613872Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Model/Users.pm 251 2007-05-17T21:12:46.944471Z CLaco  $
 package Mango::Catalyst::Model::Users;
 use strict;
 use warnings;

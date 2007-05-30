@@ -1,9 +1,9 @@
-# $Id: /local/Mango/trunk/lib/Mango.pm 263 2007-05-28T14:10:22.795280Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango.pm 313 2007-05-30T16:16:45.407876Z claco  $
 package Mango;
 use strict;
 use warnings;
 
-our $VERSION = '0.01000_04';
+our $VERSION = '0.01000_05';
 
 1;
 __END__
@@ -29,7 +29,7 @@ L<http://svn.mangoframework.com/CPAN/Mango/trunk>.
 =head1 WEBSITE
 
 Keep an eye on the website [L<http://mangoframework.com/blog/>] for the latest
-news and releases. 
+news and releases.
 
 =head1 CONTACT
 

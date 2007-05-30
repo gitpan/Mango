@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Plugin/Authentication.pm 186 2007-05-02T01:35:12.083288Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Plugin/Authentication.pm 149 2007-05-02T17:18:07.514045Z CLaco  $
 package Mango::Catalyst::Plugin::Authentication;
 use strict;
 use warnings;

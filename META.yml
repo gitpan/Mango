@@ -5,7 +5,7 @@ build_requires:
   Directory::Scratch: 0
   ExtUtils::MakeMaker: 6.11
 distribution_type: module
-generated_by: Module::Install version 0.65
+generated_by: Module::Install version 0.67
 license: perl
 meta-spec: 
   url: http://module-build.sourceforge.net/META-spec-v1.3.html
@@ -29,6 +29,7 @@ requires:
   DBIx::Class: 0.07999_02
   DateTime: 0
   Error: 0
+  File::ShareDir: 0
   FormValidator::Simple: 0.17
   Handel: 0.99_18
   I18N::LangTags: 0
@@ -43,4 +44,4 @@ requires:
   YAML: 0
   perl: 5.8.1
 tests: t/*.t t/*/*.t
-version: 0.01000_04
+version: 0.01000_05

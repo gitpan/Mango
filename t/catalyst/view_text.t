@@ -1,5 +1,5 @@
 #!perl -w
-# $Id: /local/Mango/trunk/t/catalyst/view_text.t 229 2007-05-20T19:40:30.592675Z claco  $
+# $Id: /local/Mango/trunk/t/catalyst/view_text.t 309 2007-05-29T15:19:54.893692Z claco  $
 use strict;
 use warnings;
 
@@ -19,12 +19,15 @@ BEGIN {
 };
 
 my $temp = Directory::Scratch->new;
-my $dir  = $temp->base;
-my $file = $temp->touch('default', 'foo');
+my $dir  = $temp->mkdir('templates/tt/text');
+my $file = $temp->touch('templates/tt/text/default', 'foo');
+$temp->touch('templates/tt/text/wrapper', '[% content %]');
+$ENV{'MANGO_SHARE'} = $temp;
 
 my $c = Mango::Test::Catalyst->new({
     config => {
-        root => $dir->stringify
+        root => 't',
+        home => 't'
     },
     stash => {
         template => $file->basename

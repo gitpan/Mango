@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Object.pm 171 2007-04-22T23:07:08.321734Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/Object.pm 135 2007-04-22T23:02:40.277759Z claco  $
 package Mango::Object;
 use strict;
 use warnings;

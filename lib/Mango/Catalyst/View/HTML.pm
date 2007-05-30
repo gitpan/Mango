@@ -1,17 +1,32 @@
-# $Id: /local/Mango/trunk/lib/Mango/Catalyst/View/HTML.pm 200 2007-05-17T23:25:51.613872Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/Catalyst/View/HTML.pm 312 2007-05-30T14:59:33.006810Z claco  $
 package Mango::Catalyst::View::HTML;
 use strict;
 use warnings;
 
 BEGIN {
     use base qw/Catalyst::View::TT/;
+    use File::ShareDir ();
+    use Path::Class ()
 };
+
+__PACKAGE__->config(
+    WRAPPER => 'wrapper'
+);
+
+my $share = File::ShareDir::dist_dir('Mango');
+my @path  = qw/templates tt html/;
 
 sub process {
     my ($self, $c) = (shift, shift);
+    my $templates = Path::Class::Dir->new($ENV{'MANGO_SHARE'} || $share, @path);
+
+    @{$self->include_path} = (
+        $c->path_to('root', @path),
+        $templates
+    );
 
     $self->NEXT::process($c, @_);
-    $c->res->content_type('text/html; charset=utf-8');
+    $c->response->content_type('text/html; charset=utf-8');
 
     return 1;
 };
@@ -33,6 +48,30 @@ Mango::Catalyst::View::HTML renders content using Catalyst::View::TT and
 serves it with the following content type:
 
     text/html; charset=utf-8
+
+=head1 TEMPLATES
+
+When Mango is installed, its stock html templates are stored in:
+
+    %PERLINST%/site/lib/auto/Mango/templates/tt/html
+
+When templates are rendered, the following directories are used:
+
+    root/templates/tt/html
+    %PERLINST%/site/lib/auto/Mango/templates/tt/html
+
+You can override any default template by creating a template file of the same
+name in your local application template directory.
+
+If you want to use templates from a different shared directory, you can set
+$ENV{'MANGO_SHARE'}:
+
+    $ENV{'MANGO_SHARE'} = '/usr/local/share/Mango';
+
+Now, the template search path will be:
+
+    root/templates/tt/html
+    /usr/local/share/Mango/templates/tt/html
 
 =head1 METHODS
 

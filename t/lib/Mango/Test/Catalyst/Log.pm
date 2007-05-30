@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/t/lib/Mango/Test/Catalyst/Log.pm 239 2007-05-23T02:39:43.357971Z claco  $
+# $Id: /local/Mango/trunk/t/lib/Mango/Test/Catalyst/Log.pm 309 2007-05-29T15:19:54.893692Z claco  $
 package Mango::Test::Catalyst::Log;
 use strict;
 use warnings;
@@ -12,6 +12,12 @@ sub new {
     my $class = shift;
 
     bless shift || {}, $class;
+};
+
+sub error {
+    my $self = shift;
+
+    die shift;
 };
 
 1;

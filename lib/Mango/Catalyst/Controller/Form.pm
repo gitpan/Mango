@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Controller/Form.pm 259 2007-05-28T05:46:50.036668Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Controller/Form.pm 313 2007-05-30T16:16:45.407876Z claco  $
 package Mango::Catalyst::Controller::Form;
 use strict;
 use warnings;
@@ -15,6 +15,26 @@ BEGIN {
     __PACKAGE__->mk_group_accessors('component_class', qw/form_class/);
 };
 __PACKAGE__->form_class('Mango::Form');
+
+sub _parse_Form_attr {
+    my ($self, $c, $name, $value) = @_;
+
+    if (my $form = $self->forms->{$value}) {
+        return Form => $form;
+    };
+
+    return;
+};
+
+sub _parse_FormFile_attr {
+    my ($self, $c, $name, $value) = @_;
+
+    if (my $form = $self->_load_form_from_file($c, $value)) {
+        return Form => $form;
+    };
+
+    return;
+};
 
 sub ACCEPT_CONTEXT {
     my $self = shift;
@@ -38,7 +58,7 @@ sub COMPONENT {
     $self->forms({});
 
     if (my $form_directory = $self->{'form_directory'}) {
-        $self->form_directory($form_directory);  
+        $self->form_directory($form_directory);
     };
     if (!$self->form_directory) {
         $self->form_directory(
@@ -51,17 +71,16 @@ sub COMPONENT {
     );
 
     foreach my $file (@files) {
-        $c->log->debug("Loading Form '$file'");
-
         my $filename = Path::Class::file($file)->basename;
         my ($name, $directories, $suffix) = File::Basename::fileparse($filename, '.yml');
         my $action = Path::Class::dir($prefix, $name)->as_foreign('Unix');
-        my $form = $self->form_class->new({
-            source => $file
-        });
+
+        my $form = $self->_load_form_from_file($c, $file);
         if ($form->action) {
             $self->forms->{$form->action} = $form;
         };
+
+        $c->log->debug("Form $filename attached to action '$action'");
         $self->forms->{$name} = $form;
         $self->forms->{$action} = $form;
     };
@@ -69,18 +88,39 @@ sub COMPONENT {
     return $self;
 };
 
+sub _load_form_from_file {
+    my ($self, $c, $file) = @_;
+
+    $c->log->debug("Loading form '$file'");
+
+    return $self->form_class->new({
+        source => $file
+    });
+};
+
 sub form {
     my ($self, $name) = @_;
     my $c = $self->context;
+    my $form;
 
     $name ||= $c->action;
 
-    if (my $form = $self->forms->{$name}) {
+    if (exists $c->action->attributes->{'Form'}) {
+        $form = $c->action->attributes->{'Form'}->[-1];
+    };
+
+    if (!$form) {
+        $form = $self->forms->{$name};
+    };
+
+    if ($form) {
         $form->action($c->request->uri->as_string);
         $form->params($c->request);
         $form->localizer(
             sub {$c->localize(@_)}
         );
+
+        $c->stash->{'form'} = $form;
 
         return $form;
     };
@@ -97,9 +137,13 @@ sub submitted {
 
 sub validate {
     my $self = shift;
+    my $c = $self->context;
     my $form = $self->form;
+    my $results = $form->validate(@_);
 
-    return $form ? $form->validate(@_) : undef;
+    $c->stash('errors') = $results->errors;
+
+    return $results;
 };
 
 1;
@@ -113,7 +157,7 @@ Mango::Catalyst::Controller::Form - Catalyst controller for form based activity.
 
     package MyApp::Controller::Stuff;
     use base qw/Mango::Catalyst:Controller::Form/;
-    
+
     sub edit : Local {
         my ($self, $c) = @_;
         if ($self->submitted) {
@@ -137,24 +181,24 @@ For example:
 
     ## controller
     MyApp::Controller::Foo::Bar;
-    
+
     ## directory/files
     root/forms/foo/bar/create.yml
     root/forms/foo/bar/edit.yml
-    
+
     ## actions
     sub create : Local {
         $self->form; ## create.yml form
     };
-    
+
     sub edit : Local {
         $self->form; ## edit.yml form
     };
 
-IF you would like to load forms from a different directory, specify that
+If you would like to load forms from a different directory, specify that
 directory using the C<form_directory> configuration option below.
 
-head1 CONFIGURATION
+=head1 CONFIGURATION
 
 The following configuration options are used directly by this controller:
 
@@ -178,6 +222,40 @@ class2prefix are loaded instead.
     );
 
 =back
+
+=head1 ATTRIBUTES
+
+The following method attribute are available:
+
+=head2 Form
+
+=over
+
+=item Arguments: $name
+
+=back
+
+Set the name of the form to use for the current method/action.
+
+    sub create : Form('myform') Local {
+        my $self = shift;
+        my $form = $self->form;  # returns myform.yml form
+    };
+
+=head2 FormFile
+
+=over
+
+=item Arguments: $file
+
+=back
+
+Sets the file name of the form to use for the current method/action.
+
+    sub create : FormFile('/path/to/myform.yml') Local {
+        my $self = shift;
+        my $form = $self->form;  # returns myform.yml form
+    };
 
 =head1 METHODS
 

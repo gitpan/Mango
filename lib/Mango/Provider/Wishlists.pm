@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Provider/Wishlists.pm 167 2007-04-21T03:53:20.211692Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/Provider/Wishlists.pm 133 2007-04-21T03:49:26.663475Z claco  $
 package Mango::Provider::Wishlists;
 use strict;
 use warnings;

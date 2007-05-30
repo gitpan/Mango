@@ -1,5 +1,5 @@
 #!perl -wT
-# $Id: /local/Mango/trunk/t/catalyst/controller_form.t 259 2007-05-28T05:46:50.036668Z claco  $
+# $Id: /local/Mango/trunk/t/catalyst/controller_form.t 313 2007-05-30T16:16:45.407876Z claco  $
 use strict;
 use warnings;
 
@@ -85,7 +85,7 @@ BEGIN {
 
 
     ## action
-    $c->action('form/edit');
+    $c->action->reverse('form/edit');
     $c->request->uri(URI->new('http://foo/edit/new'));
     delete $c->request->{'_submitted_products_edit'};
     $form = $controller->form;
@@ -167,7 +167,7 @@ BEGIN {
 
 
     ## action
-    $c->action('form/edit');
+    $c->action->reverse('form/edit');
     $c->request->uri(URI->new('http://foo/edit/new'));
     delete $c->request->{'_submitted_products_edit'};
     $form = $controller->form;

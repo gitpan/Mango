@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Provider/DBIC.pm 233 2007-05-22T03:00:04.521598Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/Provider/DBIC.pm 283 2007-05-22T13:34:26.078125Z CLaco  $
 package Mango::Provider::DBIC;
 use strict;
 use warnings;

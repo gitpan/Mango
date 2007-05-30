@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/t/lib/Mango/Test.pm 188 2007-05-13T01:32:44.532827Z claco  $
+# $Id: /local/Mango/trunk/t/lib/Mango/Test.pm 151 2007-05-14T13:55:18.090101Z CLaco  $
 package Mango::Test;
 use strict;
 use warnings;
