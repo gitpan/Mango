@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Plugin/I18N.pm 281 2007-05-21T13:00:50.596065Z CLaco  $
+# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Plugin/I18N.pm 1821 2007-08-10T01:46:18.172257Z claco  $
 package Mango::Catalyst::Plugin::I18N;
 use strict;
 use warnings;

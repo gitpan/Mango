@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Schema/Cart/Item.pm 128 2007-04-16T02:55:17.221512Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/Schema/Cart/Item.pm 135 2007-04-16T02:55:17.221512Z claco  $
 package Mango::Schema::Cart::Item;
 use strict;
 use warnings;

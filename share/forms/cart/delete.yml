@@ -1,0 +1,20 @@
+# $Id: /local/Mango/trunk/share/forms/cart/delete.yml 1842 2007-09-09T21:25:23.851088Z claco  $
+---
+id: cart_delete
+name: cart_delete
+method: POST
+javascript: 0
+stylesheet: 1
+sticky: 0
+submit: LABEL_DELETE
+fields:
+  - id:
+      type: hidden
+      constraints:
+        - NOT_BLANK
+        - UINT
+  - quantity:
+      type: hidden
+      constraints:
+        - NOT_BLANK
+        - UINT

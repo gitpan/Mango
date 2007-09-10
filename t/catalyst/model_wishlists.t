@@ -1,5 +1,5 @@
 #!perl -wT
-# $Id: /local/Mango/trunk/t/catalyst/model_wishlists.t 281 2007-05-21T13:00:50.596065Z CLaco  $
+# $Id: /local/Mango/trunk/t/catalyst/model_wishlists.t 181 2007-05-20T19:33:04.774686Z claco  $
 use strict;
 use warnings;
 

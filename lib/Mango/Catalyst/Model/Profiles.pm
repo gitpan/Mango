@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Model/Profiles.pm 251 2007-05-17T21:12:46.944471Z CLaco  $
+# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Model/Profiles.pm 159 2007-05-17T21:06:34.702446Z claco  $
 package Mango::Catalyst::Model::Profiles;
 use strict;
 use warnings;

@@ -1,9 +1,25 @@
-# $Id: /local/Mango/trunk/lib/Mango.pm 313 2007-05-30T16:16:45.407876Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango.pm 1821 2007-08-10T01:46:18.172257Z claco  $
 package Mango;
 use strict;
 use warnings;
 
-our $VERSION = '0.01000_05';
+our $VERSION = '0.01000_06';
+
+BEGIN {
+    use base qw/Class::Accessor::Grouped/;
+    use File::ShareDir ();
+};
+__PACKAGE__->share(eval {File::ShareDir::dist_dir('Mango') || $ENV{'MANGO_SHARE'}});
+
+sub share {
+    my ($self, $share) = @_;
+
+    if ($share) {
+        $self->set_inherited('share', $share);
+    };
+
+    return $ENV{'MANGO_SHARE'} || $self->get_inherited('share');
+};
 
 1;
 __END__
@@ -14,31 +30,32 @@ Mango - An ecommerce solution using Catalyst, Handel and DBIx::Class
 
 =head1 DESCRIPTION
 
-Mango is an ecommerce solution built using Catalyst, Handel and DBIx::Class.
-It is built using DBIx::Class for the database interaction and Handel for
-the shopping cart/wishlist/order/checkout logic.
+This is a generic class containing the default configuration used by other
+Mango classes.
 
-B<WARNING: This is an alpha release containing core modules only. No Catalyst
-or web bits are included at this time.>
+To learn more about what Mango is and how it works, take a look at the
+L<manual|Mango::Manual>.
 
-=head1 SOURCE
+=head1 METHODS
 
-You can get the latest source from the Subversion repository located at
-L<http://svn.mangoframework.com/CPAN/Mango/trunk>.
+=head2 share
 
-=head1 WEBSITE
+=over
 
-Keep an eye on the website [L<http://mangoframework.com/blog/>] for the latest
-news and releases.
+=item Arguments: $share_path
 
-=head1 CONTACT
+=back
 
-If you need help or have any questions, stop by #mango@irc.perl.org or email
-me at claco@chrislaco.com.
+Gets/sets the location of the Mango share directory where the default
+dist templates are stored.
+
+    print $self->share;
+
+If the C<ENV> variable C<MANGO_SHARE> is set, that will be returned instead.
 
 =head1 SEE ALSO
 
-L<Handel>, L<DBIx::Class>
+L<Mango::Manual>
 
 =head1 AUTHOR
 

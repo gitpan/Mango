@@ -1,5 +1,6 @@
-# $Id: /local/Mango/trunk/share/forms/admin/roles/edit.yml 308 2007-05-29T13:08:41.522340Z claco  $
+# $Id: /local/Mango/trunk/share/forms/admin/roles/edit.yml 1828 2007-08-11T00:17:05.755369Z claco  $
 ---
+id: roles_edit
 name: roles_edit
 method: POST
 javascript: 0

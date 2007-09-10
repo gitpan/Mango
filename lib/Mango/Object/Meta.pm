@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Object/Meta.pm 133 2007-04-21T03:49:26.663475Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/Object/Meta.pm 142 2007-04-21T03:49:26.663475Z claco  $
 package Mango::Object::Meta;
 use strict;
 use warnings;

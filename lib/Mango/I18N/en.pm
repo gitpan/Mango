@@ -1,5 +1,5 @@
 ## no critic
-# $Id: /local/Mango/trunk/lib/Mango/I18N/en.pm 273 2007-05-18T21:11:43.246632Z CLaco  $
+# $Id: /local/Mango/trunk/lib/Mango/I18N/en.pm 1813 2007-08-02T02:45:21.285386Z claco  $
 package Mango::I18N::en;
 use strict;
 use warnings;
@@ -41,6 +41,8 @@ BEGIN {
         'No provider class is specified!',
     PROVIDER_CLASS_NOT_LOADED =>
         "The provider '[_1]' could not be loaded: [_2]!",
+    VIEW_CLASS_NOT_LOADED =>
+        "The view '[_1]' could not be loaded: [_2]!",
     NOT_A_ROLE =>
         'The object is not a Mango::Role object',
     NOT_A_USER =>
@@ -59,6 +61,8 @@ BEGIN {
         'The object is not a Mango::Wishlist object',
     NOT_A_PROFILE =>
         'The object is not a Mango::Profile object',
+    NOT_A_FORM =>
+        'The object is not a Mango::Form object',
     NO_USER_SPECIFIED =>
         'No user was specified',
     MODEL_NOT_FOUND =>
@@ -71,6 +75,8 @@ BEGIN {
         'The realm \'mango\' could not be found',
     REALM_NOT_MANGO =>
         'The default realm is not \'mango\'',
+    LOGIN_FAILED =>
+        'The username or password are incorrect.',
 );
 
 1;

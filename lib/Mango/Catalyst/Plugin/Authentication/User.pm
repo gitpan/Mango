@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Plugin/Authentication/User.pm 281 2007-05-21T13:00:50.596065Z CLaco  $
+# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Plugin/Authentication/User.pm 1821 2007-08-10T01:46:18.172257Z claco  $
 package Mango::Catalyst::Plugin::Authentication::User;
 use strict;
 use warnings;
@@ -110,7 +110,9 @@ sub cart {
 
 sub AUTOLOAD {
     my ($method) = (our $AUTOLOAD =~ /([^:]+)$/);
-    return if $method =~ /(DESTROY|ACCEPT_CONTEXT|config)/;
+    if ($method =~ /(DESTROY|ACCEPT_CONTEXT|config)/) {
+        return;
+    };
 
     return shift->_user->$method(@_);
 };

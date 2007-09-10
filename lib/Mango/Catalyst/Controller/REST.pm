@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Controller/REST.pm 308 2007-05-29T13:08:41.522340Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Controller/REST.pm 1821 2007-08-10T01:46:18.172257Z claco  $
 package Mango::Catalyst::Controller::REST;
 use strict;
 use warnings;

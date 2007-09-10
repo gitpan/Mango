@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Provider/Users.pm 125 2007-04-14T02:52:20.839536Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/Provider/Users.pm 1821 2007-08-10T01:46:18.172257Z claco  $
 package Mango::Provider::Users;
 use strict;
 use warnings;

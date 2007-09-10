@@ -1,10 +1,14 @@
-# $Id: /local/Mango/trunk/t/lib/Mango/Test/Catalyst.pm 313 2007-05-30T16:16:45.407876Z claco  $
+# $Id: /local/Mango/trunk/t/lib/Mango/Test/Catalyst.pm 1828 2007-08-11T00:17:05.755369Z claco  $
 package Mango::Test::Catalyst;
 use strict;
 use warnings;
 
 BEGIN {
     use base qw/Class::Accessor::Grouped/;
+
+    require Mango::Catalyst::Plugin::Forms;
+    require Mango::Catalyst::Plugin::I18N;
+    push @Mango::Test::Catalyst::ISA, qw/Mango::Catalyst::Plugin::Forms Mango::Catalyst::Plugin::I18N/;
 
     use Carp;
     use Catalyst;

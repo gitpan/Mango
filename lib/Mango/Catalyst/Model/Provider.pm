@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Model/Provider.pm 308 2007-05-29T13:08:41.522340Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Model/Provider.pm 197 2007-05-28T05:46:35.710574Z claco  $
 package Mango::Catalyst::Model::Provider;
 use strict;
 use warnings;

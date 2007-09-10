@@ -1,16 +1,16 @@
-# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Controller/Form.pm 313 2007-05-30T16:16:45.407876Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Controller/Form.pm 1842 2007-09-09T21:25:23.851088Z claco  $
 package Mango::Catalyst::Controller::Form;
 use strict;
 use warnings;
 
 BEGIN {
-    use base qw/Catalyst::Controller Class::Accessor::Grouped/;
+    use base qw/Catalyst::Controller Catalyst::Component::ACCEPT_CONTEXT Class::Accessor::Grouped/;
     use Catalyst::Utils ();
     use Path::Class ();
     use File::Basename ();
-    use Scalar::Util qw/blessed weaken/;
+    use Scalar::Util qw/blessed/;
 
-    __PACKAGE__->mk_group_accessors('simple', qw/forms context/);
+    __PACKAGE__->mk_group_accessors('simple', qw/forms/);
     __PACKAGE__->mk_group_accessors('inherited', qw/form_directory/);
     __PACKAGE__->mk_group_accessors('component_class', qw/form_class/);
 };
@@ -20,6 +20,7 @@ sub _parse_Form_attr {
     my ($self, $c, $name, $value) = @_;
 
     if (my $form = $self->forms->{$value}) {
+        $form->action('/' . $self->path_prefix . '/');
         return Form => $form;
     };
 
@@ -34,16 +35,6 @@ sub _parse_FormFile_attr {
     };
 
     return;
-};
-
-sub ACCEPT_CONTEXT {
-    my $self = shift;
-    my ($c, @args) = @_;
-
-    weaken($c);
-    $self->context($c);
-
-    return $self;
 };
 
 sub COMPONENT {
@@ -62,7 +53,7 @@ sub COMPONENT {
     };
     if (!$self->form_directory) {
         $self->form_directory(
-            $c->path_to('root', 'forms', $prefix)
+            Path::Class::Dir->new(Mango->share, 'forms', $prefix)
         );
     };
 
@@ -76,8 +67,10 @@ sub COMPONENT {
         my $action = Path::Class::dir($prefix, $name)->as_foreign('Unix');
 
         my $form = $self->_load_form_from_file($c, $file);
-        if ($form->action) {
+        if ($form->action !~ /server\.pl$/) {
             $self->forms->{$form->action} = $form;
+        } else {
+            $form->action("/$action/");
         };
 
         $c->log->debug("Form $filename attached to action '$action'");
@@ -93,9 +86,13 @@ sub _load_form_from_file {
 
     $c->log->debug("Loading form '$file'");
 
-    return $self->form_class->new({
+    my $form = $self->form_class->new({
         source => $file
     });
+
+    $c->add_form($form);
+
+    return $form;
 };
 
 sub form {
@@ -141,7 +138,7 @@ sub validate {
     my $form = $self->form;
     my $results = $form->validate(@_);
 
-    $c->stash('errors') = $results->errors;
+    $c->stash->{'errors'} = $results->errors;
 
     return $results;
 };

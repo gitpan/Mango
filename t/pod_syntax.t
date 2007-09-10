@@ -1,5 +1,5 @@
 #!perl -wT
-# $Id: /local/Mango/trunk/t/pod_syntax.t 241 2007-05-14T20:59:21.082300Z CLaco  $
+# $Id: /local/Mango/trunk/t/pod_syntax.t 154 2007-05-14T20:53:36.824262Z claco  $
 use strict;
 use warnings;
 

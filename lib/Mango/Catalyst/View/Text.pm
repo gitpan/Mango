@@ -1,35 +1,19 @@
-# $Id: /local/Mango/trunk/lib/Mango/Catalyst/View/Text.pm 312 2007-05-30T14:59:33.006810Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/Catalyst/View/Text.pm 1821 2007-08-10T01:46:18.172257Z claco  $
 package Mango::Catalyst::View::Text;
 use strict;
 use warnings;
 
 BEGIN {
-    use base qw/Catalyst::View::TT/;
-    use File::ShareDir ();
+    use base qw/Mango::Catalyst::View::Template/;
     use Path::Class ()
 };
-
-__PACKAGE__->config(
-    WRAPPER => 'wrapper'
-);
-
-my $share = File::ShareDir::dist_dir('Mango');
-my @path  = qw/templates tt text/;
-
-sub process {
-    my ($self, $c) = (shift, shift);
-    my $templates = Path::Class::Dir->new($ENV{'MANGO_SHARE'} || $share, @path);
-
-    @{$self->include_path} = (
-        $c->path_to('root', @path),
-        $templates
-    );
-
-    $self->NEXT::process($c, @_);
-    $c->response->content_type('text/plain; charset=utf-8');
-
-    return 1;
-};
+__PACKAGE__->share_paths([
+    Path::Class::Dir->new(qw/templates %view text/)
+]);
+__PACKAGE__->root_paths([
+    Path::Class::Dir->new(qw/templates %view text/)
+]);
+__PACKAGE__->content_type('text/plain; charset=utf-8');
 
 1;
 __END__
@@ -73,6 +57,9 @@ Now, the template search path will be:
     root/templates/tt/html
     /usr/local/share/Mango/templates/tt/text
 
+See L<Mango::Catalyst::View::Template|Mango::Catalyst::View::Template> for more
+information on changing the location of templates.
+
 =head1 METHODS
 
 =head2 process
@@ -82,6 +69,10 @@ content type. There is usually no reason to call this method directly. Forward
 to this view instead:
 
     $c->forward($c->view('Text'));
+
+=head2 SEE ALSO
+
+L<Mango::Catalyst::View::Template>
 
 =head1 AUTHOR
 

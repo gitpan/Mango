@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Exception.pm 131 2007-04-20T02:17:22.876193Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/Exception.pm 1821 2007-08-10T01:46:18.172257Z claco  $
 package Mango::Exception;
 use strict;
 use warnings;

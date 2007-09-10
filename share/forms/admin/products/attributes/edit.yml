@@ -1,5 +1,6 @@
-# $Id: /local/Mango/trunk/share/forms/admin/products/attributes/edit.yml 308 2007-05-29T13:08:41.522340Z claco  $
+# $Id: /local/Mango/trunk/share/forms/admin/products/attributes/edit.yml 1813 2007-08-02T02:45:21.285386Z claco  $
 ---
+id: attributes_edit
 name: attributes_edit
 method: POST
 javascript: 0

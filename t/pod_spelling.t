@@ -1,5 +1,5 @@
 #!perl -w
-# $Id: /local/Mango/trunk/t/pod_spelling.t 312 2007-05-30T14:59:33.006810Z claco  $
+# $Id: /local/Mango/trunk/t/pod_spelling.t 1727 2007-07-02T01:55:24.685694Z claco  $
 use strict;
 use warnings;
 
@@ -193,3 +193,4 @@ DBIx-Class-current
 XPath
 xpath
 INI
+localizer

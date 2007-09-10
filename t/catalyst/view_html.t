@@ -1,5 +1,5 @@
 #!perl -w
-# $Id: /local/Mango/trunk/t/catalyst/view_html.t 309 2007-05-29T15:19:54.893692Z claco  $
+# $Id: /local/Mango/trunk/t/catalyst/view_html.t 1828 2007-08-11T00:17:05.755369Z claco  $
 use strict;
 use warnings;
 
@@ -20,8 +20,8 @@ BEGIN {
 
 my $temp = Directory::Scratch->new;
 my $dir  = $temp->mkdir('templates/tt/html');
-my $file = $temp->touch('templates/tt/html/default', 'foo');
-$temp->touch('templates/tt/html/wrapper', '[% content %]');
+my $file = $temp->touch('templates/tt/html/default', 'htmlfoo');
+$temp->touch('templates/tt/html/wrapper', 'htmlwrapper: [% content %]');
 $ENV{'MANGO_SHARE'} = $temp;
 
 my $c = Mango::Test::Catalyst->new({
@@ -46,6 +46,6 @@ isa_ok($view, 'Mango::Catalyst::View::HTML');
     SKIP: {
         skip 'Test::LongString not installed', 1 unless eval 'require Test::LongString';
 
-        Test::LongString::is_string_nows($c->response->body, 'foo');
+        Test::LongString::is_string_nows($c->response->body, 'htmlwrapper:htmlfoo');
     };
 };

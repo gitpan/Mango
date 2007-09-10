@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Form.pm 312 2007-05-30T14:59:33.006810Z claco  $
+# $Id: /local/Mango/trunk/lib/Mango/Form.pm 1829 2007-08-11T03:35:51.262667Z claco  $
 package Mango::Form;
 use strict;
 use warnings;
@@ -14,7 +14,7 @@ BEGIN {
     use Clone ();
     use YAML ();
 
-    __PACKAGE__->mk_group_accessors('simple', qw/labels messages profile validator _form localizer _unique/);
+    __PACKAGE__->mk_group_accessors('simple', qw/labels messages profile validator _form localizer _unique _exists/);
 };
 
 sub new {
@@ -28,7 +28,8 @@ sub new {
         profile => $args->{'profile'} || [],
         validator => $args->{'validator'} || FormValidator::Simple->new,
         localizer => $args->{'localizer'} || \&Mango::I18N::translate,
-        _unique => $args->{'unique'} || {}
+        _unique => $args->{'unique'} || {},
+        _exists => $args->{'exists'} || {}
     }, $class;
 
     $self->parse($source);
@@ -36,6 +37,22 @@ sub new {
     $self->values($args->{'values'}) if $args->{'values'};
 
     return $self;
+};
+
+sub clone {
+    my $self = shift;
+    my $localizer = $self->localizer;
+    my $params = $self->params;
+
+    $self->params(undef);
+    $self->localizer(undef);
+    
+    my $form = Clone::clone($self);
+    
+    $self->params($params);
+    $self->localizer($localizer);
+
+    return $form;
 };
 
 sub field {
@@ -113,14 +130,20 @@ sub parse {
                 my ($cname, @args) = split /, ?/, $constraint;
                 $cname = uc $cname;
 
-                if ($cname eq 'SAME_AS') {
+                if ($cname =~ /(NOT_)?SAME_AS/) {
                     my $mname = uc $name . '_' . $cname . '_' . uc $args[0];
-                    $self->messages->{$mname}->{'DUPLICATION'} = $mname;
-                    push @additional, {$mname => [$name, @args]}, ['DUPLICATION'];
+                    $self->messages->{$mname}->{($1 || '') . 'DUPLICATION'} = $mname;
+                    push @additional, {$mname => [$name, @args]}, [($1 || '') . 'DUPLICATION'];
                 } else {
                     if ($cname eq 'UNIQUE' && !$self->unique($name)) {
                         push(@args, $name) unless scalar @args;
                         $self->unique($name, sub {
+                            return FormValidator::Simple::Constants::FALSE;
+                        });
+                    };
+                    if ($cname eq 'EXISTS' && !$self->exists($name)) {
+                        push(@args, $name) unless scalar @args;
+                        $self->exists($name, sub {
                             return FormValidator::Simple::Constants::FALSE;
                         });
                     };
@@ -141,13 +164,23 @@ sub parse {
 };
 
 sub params {
-    my ($self, $object) = @_;
+    my $self = shift;
 
-    if ($object) {
-        $self->_form->{'params'} = $object;
+    if (@_) {
+        $self->_form->{'params'} = shift;
     };
 
     return $self->_form->{'params'};
+};
+
+sub exists {
+    my ($self, $field, $code) = @_;
+
+    if (ref $code eq 'CODE') {
+        $self->_exists->{$field} = $code;
+    };
+
+    return $self->_exists->{$field};
 };
 
 sub unique {
@@ -171,6 +204,17 @@ sub validate {
         my $field = $args->[0];
 
         my $result = $self->unique($field)->($self, $field, $value);
+
+        return $result ?
+            FormValidator::Simple::Constants::TRUE :
+            FormValidator::Simple::Constants::FALSE;
+    };
+    local *FormValidator::Simple::Validator::EXISTS = sub {
+        my ($i, $params, $args) = @_;
+        my $value = $params->[0];
+        my $field = $args->[0];
+  
+        my $result = $self->exists($field)->($self, $field, $value);
 
         return $result ?
             FormValidator::Simple::Constants::TRUE :

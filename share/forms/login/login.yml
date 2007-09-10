@@ -1,0 +1,26 @@
+# $Id: /local/Mango/trunk/share/forms/login/login.yml 1842 2007-09-09T21:25:23.851088Z claco  $
+---
+id: login
+name: login
+method: POST
+javascript: 0
+stylesheet: 1
+sticky: 1
+submit: LABEL_LOGIN
+fields:
+  - username:
+      type: text
+      size: 20
+      maxlength: 25
+      constraints:
+        - NOT_BLANK
+        - LENGTH, 1, 25
+  - password:
+      type: password
+      size: 20
+      maxlength: 255
+      constraints:
+        - NOT_BLANK
+        - LENGTH, 1, 255
+  - return:
+      type: hidden

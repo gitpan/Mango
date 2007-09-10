@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Plugin/Authentication/AnonymousUser.pm 273 2007-05-18T21:11:43.246632Z CLaco  $
+# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Plugin/Authentication/AnonymousUser.pm 176 2007-05-18T21:05:28.625563Z claco  $
 package Mango::Catalyst::Plugin::Authentication::AnonymousUser;
 use strict;
 use warnings;

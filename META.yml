@@ -20,28 +20,30 @@ requires:
   Catalyst: 5.7007
   Catalyst::Action::REST: 0.40
   Catalyst::Action::RenderView: 0
+  Catalyst::Component::ACCEPT_CONTEXT: 0.03
   Catalyst::Plugin::Authentication: 0.09999
   Catalyst::Plugin::ConfigLoader: 0
   Catalyst::Plugin::Static::Simple: 0
-  Class::Accessor::Grouped: 0.03
+  Class::Accessor::Grouped: 0.06000
   Class::Inspector: 0
-  Clone: 0
-  DBIx::Class: 0.07999_02
+  Clone: 0.27
+  DBIx::Class: 0.08002
   DateTime: 0
   Error: 0
   File::ShareDir: 0
   FormValidator::Simple: 0.17
-  Handel: 0.99_18
+  Handel: 1.00001
   I18N::LangTags: 0
   I18N::LangTags::Detect: 0
   Locale::Maketext: 0
   MIME::Types: 0
   Path::Class: 0
   Scalar::Util: 0
+  Set::Scalar: 0
   XML::Atom: 0.25
   XML::Feed: 0.12
   XML::RSS: 1.22
   YAML: 0
   perl: 5.8.1
 tests: t/*.t t/*/*.t
-version: 0.01000_05
+version: 0.01000_06

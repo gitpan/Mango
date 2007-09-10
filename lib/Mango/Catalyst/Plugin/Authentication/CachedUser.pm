@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Plugin/Authentication/CachedUser.pm 251 2007-05-17T21:12:46.944471Z CLaco  $
+# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Plugin/Authentication/CachedUser.pm 159 2007-05-17T21:06:34.702446Z claco  $
 package Mango::Catalyst::Plugin::Authentication::CachedUser;
 use strict;
 use warnings;

@@ -1,5 +1,6 @@
-# $Id: /local/Mango/trunk/share/forms/admin/products/create.yml 299 2007-05-25T13:08:47.109841Z claco  $
+# $Id: /local/Mango/trunk/share/forms/admin/products/create.yml 1813 2007-08-02T02:45:21.285386Z claco  $
 ---
+id: products_create
 name: products_create
 method: POST
 javascript: 0

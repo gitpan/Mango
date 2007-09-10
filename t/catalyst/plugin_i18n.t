@@ -1,5 +1,5 @@
 #!perl -w
-# $Id: /local/Mango/trunk/t/catalyst/plugin_i18n.t 281 2007-05-21T13:00:50.596065Z CLaco  $
+# $Id: /local/Mango/trunk/t/catalyst/plugin_i18n.t 1828 2007-08-11T00:17:05.755369Z claco  $
 use strict;
 use warnings;
 use utf8;
@@ -10,10 +10,6 @@ BEGIN {
     use Mango::Test::Catalyst;
 
     use_ok('Mango::Catalyst::Plugin::I18N');
-
-    no warnings 'once';
-    *Mango::Test::Catalyst::languages = \&Mango::Catalyst::Plugin::I18N::languages;
-    *Mango::Test::Catalyst::localize = \&Mango::Catalyst::Plugin::I18N::localize;
 };
 
 
