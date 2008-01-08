@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Controller/Form.pm 1842 2007-09-09T21:25:23.851088Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Form.pm 1126 2008-01-03T22:52:40.007904Z claco  $
 package Mango::Catalyst::Controller::Form;
 use strict;
 use warnings;
@@ -43,14 +43,8 @@ sub COMPONENT {
     my $c = shift;
     my $prefix = Catalyst::Utils::class2prefix($class);
 
-    if (my $form_class = $self->{'form_class'}) {
-        $self->form_class($form_class);
-    };
     $self->forms({});
 
-    if (my $form_directory = $self->{'form_directory'}) {
-        $self->form_directory($form_directory);
-    };
     if (!$self->form_directory) {
         $self->form_directory(
             Path::Class::Dir->new(Mango->share, 'forms', $prefix)
@@ -67,13 +61,16 @@ sub COMPONENT {
         my $action = Path::Class::dir($prefix, $name)->as_foreign('Unix');
 
         my $form = $self->_load_form_from_file($c, $file);
-        if ($form->action !~ /server\.pl$/) {
-            $self->forms->{$form->action} = $form;
+
+        if ($form->{'action'}) {
+            $form->action("$_");
         } else {
             $form->action("/$action/");
         };
 
-        $c->log->debug("Form $filename attached to action '$action'");
+        if ($c->debug) {
+            $c->log->debug("Form $filename attached to action '$action'");
+        };
         $self->forms->{$name} = $form;
         $self->forms->{$action} = $form;
     };
@@ -84,7 +81,9 @@ sub COMPONENT {
 sub _load_form_from_file {
     my ($self, $c, $file) = @_;
 
-    $c->log->debug("Loading form '$file'");
+    if ($c->debug) {
+        $c->log->debug("Loading form '$file'");
+    };
 
     my $form = $self->form_class->new({
         source => $file

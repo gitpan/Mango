@@ -3,13 +3,14 @@ use strict;
 use warnings;
 
 BEGIN {
-    use base qw/Mango::Catalyst::Controller::Form Mango::Catalyst::Controller::REST/;
+    use base qw/Mango::Catalyst::Controller/;
     use Handel::Constants qw/:cart/;
     use Mango ();
-    use Path::Class ();
-    
-    __PACKAGE__->form_directory(
-        Path::Class::Dir->new(Mango->share, 'forms', 'cart')
+    use Path::Class::Dir ();
+
+    __PACKAGE__->config(
+        resource_name  => 'cart',
+        form_directory => Path::Class::Dir->new(Mango->share, 'forms', 'cart')
     );
 };
 
@@ -39,12 +40,13 @@ sub add : Local Template('cart/index') {
     if ($self->submitted && $self->validate->success) {
         $c->user->cart->add({
             sku => $product->sku,
+            description => $product->description,
             price => $product->price,
             quantity => $form->field('quantity')
         });
 
         $c->res->redirect(
-            $c->uri_for('/', $self->path_prefix . '/')
+            $c->uri_for($self->action_for('index')) . '/'
         );
     };
 
@@ -60,7 +62,7 @@ sub clear : Local Template('cart/index') {
     };
 
     $c->res->redirect(
-        $c->uri_for('/', $self->path_prefix . '/')
+        $c->uri_for($self->action_for('index')) . '/'
     );
 
     return;
@@ -76,7 +78,7 @@ sub delete : Local Template('cart/index') {
         });
 
         $c->res->redirect(
-            $c->uri_for('/', $self->path_prefix . '/')
+            $c->uri_for($self->action_for('index')) . '/'
         );
     };
 
@@ -95,13 +97,17 @@ sub restore : Local Template('cart/index') {
                     type    => CART_TYPE_SAVED
                 }, $c->req->param('mode') || CART_MODE_APPEND);
 
-                $c->res->redirect($c->uri_for('/cart/'));
+                $c->res->redirect(
+                    $c->uri_for($self->action_for('index')) . '/'
+                );
             };
         } else {
             $c->forward('list');
         };
     } else {
-        $c->res->redirect($c->uri_for('/cart/'));
+        $c->res->redirect(
+            $c->uri_for($self->action_for('index')) . '/'
+        );
     };
 
     return;
@@ -128,8 +134,8 @@ sub save : Local Template('cart/index') {
 
         $c->user->cart->clear;
 
-        $c->res->redirect(
-            $c->uri_for('/', $self->path_prefix . '/')
+        $c->response->redirect(
+            $c->uri_for_resource('wishlists') . '/'
         );
     };
 
@@ -151,7 +157,7 @@ sub update : Local Template('cart/index') {
         };
 
         $c->res->redirect(
-            $c->uri_for('/', $self->path_prefix . '/')
+            $c->uri_for($self->action_for('index')) . '/'
         );
     };
 
@@ -160,3 +166,49 @@ sub update : Local Template('cart/index') {
 
 1;
 __END__
+
+=head1 NAME
+
+Mango::Catalyst::Controller::Carts - Catalyst controller for cart information
+
+=head1 DESCRIPTION
+
+Mango::Catalyst::Controller::Carts provides the web interface for shopping cart
+information.
+
+=head1 ACTIONS
+
+=head2 add : /cart/add/
+
+Adds and item to the cart.
+
+=head2 clear : /cart/clear/
+
+Removes all items from the cart.
+
+=head2 delete : /cart/delete/
+
+Remove an item for the cart.
+
+=head2 index : /cart/
+
+Displays the contents of the cart.
+
+=head2 restore : /cart/restore/
+
+Restores a wishlist into the cart.
+
+=head2 update : /cart/update/
+
+Updates and item in the cart.
+
+=head1 SEE ALSO
+
+L<Mango::Catalyst::Model::Carts>, L<Mango::Provider::Carts>
+
+=head1 AUTHOR
+
+    Christopher H. Laco
+    CPAN ID: CLACO
+    claco@chrislaco.com
+    http://today.icantfocus.com/blog/

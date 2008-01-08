@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Wishlist/Item.pm 142 2007-04-21T03:49:26.663475Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Wishlist/Item.pm 1154 2008-01-06T06:40:52.146460Z claco  $
 package Mango::Wishlist::Item;
 use strict;
 use warnings;
@@ -25,12 +25,24 @@ __PACKAGE__->storage->setup({
 __PACKAGE__->result_iterator_class('Mango::Iterator');
 __PACKAGE__->create_accessors;
 
+sub price {
+    return Mango::Currency->new(shift->result->get_column('price') || 0);
+};
+
 sub update {
     my $self = shift;
 
     $self->updated(DateTime->now);
-  
+
     return $self->SUPER::update(@_);
+};
+
+sub total {
+    my $self = shift;
+
+    return Mango::Currency->new(
+        ($self->result->get_column('price') || 0)*$self->quantity
+    );
 };
 
 1;

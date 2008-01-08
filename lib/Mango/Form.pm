@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Form.pm 1829 2007-08-11T03:35:51.262667Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Form.pm 1159 2008-01-07T03:58:38.748242Z claco  $
 package Mango::Form;
 use strict;
 use warnings;
@@ -39,6 +39,16 @@ sub new {
     return $self;
 };
 
+sub action {
+    my ($self, $action) = @_;
+
+    if ($action) {
+        $self->_form->{'action'} = $action . '';
+    };
+
+    return $self->_form->action;
+};
+
 sub clone {
     my $self = shift;
     my $localizer = $self->localizer;
@@ -59,10 +69,6 @@ sub field {
     return shift->_form->field(@_);
 };
 
-sub action {
-    return shift->_form->action(@_);
-};
-
 sub render {
     my $self = shift;
     my $form = $self->_form;
@@ -75,6 +81,9 @@ sub render {
     $form->submit(
         $self->localizer->($self->labels->{'submit'})
     );
+
+    ## keeps CGI::FB from bitching about empty basename
+    local $ENV{'SCRIPT_NAME'} ||= '';
 
     return $form->render(@_);
 };
@@ -109,7 +118,7 @@ sub parse {
 
     foreach (@{$fields}) {
         my ($name, $field) = %{$_};
-        my $label = 'LABEL_' . uc $name;
+        my $label = 'FIELD_LABEL_' . uc $name;
         my $constraints = delete $field->{'constraints'};
         my $errors = delete $field->{'messages'};
 
@@ -131,7 +140,7 @@ sub parse {
                 $cname = uc $cname;
 
                 if ($cname =~ /(NOT_)?SAME_AS/) {
-                    my $mname = uc $name . '_' . $cname . '_' . uc $args[0];
+                    my $mname = 'CONSTRAINT_' . uc $name . '_' . $cname . '_' . uc $args[0];
                     $self->messages->{$mname}->{($1 || '') . 'DUPLICATION'} = $mname;
                     push @additional, {$mname => [$name, @args]}, [($1 || '') . 'DUPLICATION'];
                 } else {
@@ -147,7 +156,7 @@ sub parse {
                             return FormValidator::Simple::Constants::FALSE;
                         });
                     };
-                    $self->messages->{$name}->{$cname} = $errors->{$cname} || (uc $name . '_' . $cname);
+                    $self->messages->{$name}->{$cname} = $errors->{$cname} || ('CONSTRAINT_' . uc $name . '_' . $cname);
                     push @constraints, scalar @args ? [$cname, @args] : $cname;
                 };
             };
@@ -155,8 +164,8 @@ sub parse {
         };
     };
     
-    $self->_form->submit('LABEL_SUBMIT') unless $config->{'submit'};
-    $self->labels->{'submit'} = $config->{'submit'} || 'LABEL_SUBMIT';
+    $self->_form->submit('BUTTON_LABEL_SUBMIT') unless $config->{'submit'};
+    $self->labels->{'submit'} = $config->{'submit'} || 'BUTTON_LABEL_SUBMIT';
 
     $self->validator->set_messages({'.' => $self->messages});
 
@@ -421,6 +430,11 @@ the same configuration data.
 
 A code reference to be used to localize the field labels, buttons and messages.
 
+=item exists
+
+A hash reference containing methods to be used to determine if s fields values
+already exists.
+
 =item unique
 
 A hash reference containing methods to be used to determine field value
@@ -443,6 +457,27 @@ A hash reference containing the default form field values.
 =back
 
 Gets/sets the action for the current form.
+
+=head2 clone
+
+Creates and returns a clone of the current form.
+
+=head2 exists
+
+=over
+
+=item Arguments: $field, \&code
+
+=back
+
+Gets/sets the code reference to be used to determine if a fields value
+already exists.
+
+    $form->exists('field')->($self, 'field', 'value');
+    $form->exists('field', sub {
+        my ($self, $field, $value) = @_;
+        ...exists magic...
+    };
 
 =head2 field
 

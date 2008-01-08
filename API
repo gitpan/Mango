@@ -1,0 +1,26 @@
+Just gathering thoughts on the uri/rest api roadmap
+
+
+--------------------------------------------------------------------------------
+Users - Browser
+--------------------------------------------------------------------------------
+/users/                                 search users
+/users/<id>                             view users information
+/users/<id>/wishlists/                  view users wishlists
+/users/<id>/wishlists/<id>              view users wishlist
+/users/<id></wishlists/<id>/delete      deletes user wishlist
+
+
+/wishlists/
+/wishlists/<id>/
+/wishlists/<id>/items/<id>/delete
+
+
+--------------------------------------------------------------------------------
+Users - REST
+--------------------------------------------------------------------------------
+/users/                                 GET     search users
+/users/                                 POST    create user
+/users/<id>/                            GET     get user info
+/users/<id>/                            PUT     updates user
+/users/<id>/                            DELETE  deletes user

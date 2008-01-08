@@ -1,5 +1,5 @@
 #!perl -wT
-# $Id: /local/Mango/trunk/t/pod_coverage.t 197 2007-05-28T05:46:35.710574Z claco  $
+# $Id: /local/CPAN/Mango/trunk/t/pod_coverage.t 2007 2007-11-16T03:51:15.960234Z claco  $
 use strict;
 use warnings;
 
@@ -10,7 +10,7 @@ BEGIN {
     plan skip_all => 'set TEST_AUTHOR to enable this test' unless $ENV{TEST_AUTHOR};
 
     eval 'use Test::Pod::Coverage 1.04';
-    plan skip_all => 'Test::Pod::Coverage 1.04' if $@;
+    plan skip_all => 'Test::Pod::Coverage 1.04 not installed' if $@;
 
     eval 'use Pod::Coverage 0.14';
     plan skip_all => 'Pod::Coverage 0.14 not installed' if $@;

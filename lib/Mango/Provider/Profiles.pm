@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Provider/Profiles.pm 1821 2007-08-10T01:46:18.172257Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Provider/Profiles.pm 1150 2008-01-06T04:40:22.898704Z claco  $
 package Mango::Provider::Profiles;
 use strict;
 use warnings;
@@ -33,6 +33,27 @@ sub create {
     return $self->SUPER::create($data);
 };
 
+sub search {
+    my ($self, $filter, $options) = @_;
+
+    $filter ||= {};
+    $options ||= {};
+
+    if (my $user = delete $filter->{'user'}) {
+        if (Scalar::Util::blessed($user)) {
+            if ($user->isa('Mango::User')) {
+                $filter->{'user_id'} = $user->id;
+            } else {
+                Mango::Exception->throw('NOT_A_USER');
+            };
+        } else {
+            $filter->{'user_id'} = $user;
+        };
+    };
+
+    return $self->SUPER::search($filter, $options);
+};
+
 sub delete {
     my ($self, $filter) = @_;
 
@@ -59,27 +80,6 @@ sub delete {
     };
 
     return $self->SUPER::delete($filter);
-};
-
-sub search {
-    my ($self, $filter, $options) = @_;
-
-    $filter ||= {};
-    $options ||= {};
-
-    if (my $user = delete $filter->{'user'}) {
-        if (Scalar::Util::blessed($user)) {
-            if ($user->isa('Mango::User')) {
-                $filter->{'user_id'} = $user->id;
-            } else {
-                Mango::Exception->throw('NOT_A_USER');
-            };
-        } else {
-            $filter->{'user_id'} = $user;
-        };
-    };
-
-    return $self->SUPER::search($filter, $options);
 };
 
 1;

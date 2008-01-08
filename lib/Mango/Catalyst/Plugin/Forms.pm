@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Plugin/Forms.pm 1845 2007-09-10T00:07:53.842207Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Plugin/Forms.pm 1126 2008-01-03T22:52:40.007904Z claco  $
 package Mango::Catalyst::Plugin::Forms;
 use strict;
 use warnings;
@@ -31,7 +31,11 @@ sub forms {
 
     if (my $form = $self->_forms->{$name}) {
         $form = $form->clone;
-        $form->action($self->request->uri->as_string) unless $form->action;
+
+        ## hack around form action // under Cat::Test/Mech
+        if ($form->{'action'} || $form->action =~ /^\/\//) {
+            $form->action($self->request->uri->as_string);
+        };
         $form->params($self->request);
         $form->localizer(
             sub {$self->localize(@_)}

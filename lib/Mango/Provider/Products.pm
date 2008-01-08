@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Provider/Products.pm 1821 2007-08-10T01:46:18.172257Z claco  $
+# $Id: /local/CPAN/Mango/trunk/lib/Mango/Provider/Products.pm 1993 2007-10-28T02:49:40.862930Z claco  $
 package Mango::Provider::Products;
 use strict;
 use warnings;
@@ -7,6 +7,7 @@ BEGIN {
     use base qw/Mango::Provider::DBIC/;
     use Mango::Exception ();
     use Scalar::Util ();
+    use DateTime ();
 
     __PACKAGE__->mk_group_accessors('component_class', qw/attribute_class tag_class/);
     __PACKAGE__->mk_group_accessors('inherited', qw/attribute_source_name tag_source_name/);
@@ -187,6 +188,9 @@ sub delete_attributes {
 sub update_attribute {
     my ($self, $attribute) = @_;
     my $resultset = $self->schema->resultset($self->attribute_source_name);
+    my $updated_column = $self->updated_column;
+
+    $attribute->$updated_column(DateTime->now);
 
     return $resultset->find($attribute->id)->update(
         {$attribute->get_columns}

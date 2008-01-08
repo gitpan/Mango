@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/t/lib/Mango/Test/Catalyst.pm 1828 2007-08-11T00:17:05.755369Z claco  $
+# $Id: /local/CPAN/Mango/trunk/t/lib/Mango/Test/Catalyst.pm 1976 2007-10-06T00:30:31.323858Z claco  $
 package Mango::Test::Catalyst;
 use strict;
 use warnings;
@@ -105,7 +105,7 @@ sub component {
     eval {
         $component = $name->COMPONENT($context, $args->{args});
     };
-    croak "didn't get a component: $@" if $@ || !$component;
+    croak $@ if $@ || !$component;
 
     if ($component->can('ACCEPT_CONTEXT')) {
         return $component->ACCEPT_CONTEXT($context);

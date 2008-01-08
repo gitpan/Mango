@@ -1,5 +1,25 @@
-# $Id: /local/Mango/trunk/Changes 1845 2007-09-10T00:07:53.842207Z claco  $
+# $Id: /local/CPAN/Mango/Changes 1161 2008-01-08T00:08:18.909009Z claco  $
 This file documents the revision history for Perl extension Mango.
+
+0.01000_07 Mon Jan 7 19:07:23 2008
+    - Added Catalyst::View::TT/Session/Cookie/Store to PREREQ
+    - Fixed problem in tests with latest Error.pm
+    - Updated XML::Atom PREREQ and test
+    - Mango->share now uses module_dir and falls back to ../../share when using
+        local INC files
+    - Added mango.pl to create app/config/data/components/database
+    - Moved users specific controller/form/templates into Users/users namespace
+    - Fixed urls to deal with not ending in /
+    - Updating an Attribute wasn't setting update()
+    - Converted admin to RESTish access
+    - Controllers now inherit from M::Catalyst:Controller (which does REST/Form
+    - Merge plugins into Plugin::Application
+    - Added Auth helpers is_admin/unauthorized
+    - Added REST helpers want_html/browser/yaml/feed, etc
+    - Form I18N is now FIELD_LABEL_$FIELD instead of LABEL_$FIELD
+    - Form I18N is now BUTTON_LABEL_$FIELD instead of LABEL_$FIELD
+    - Form I18N is now CONSTRAINT_$CONSTRAINT instead of $FIELD_$CONTSTRAINT
+    - Wishlist admin works mostly, with tests
 
 0.01000_06 Sep 09 20:01:22 2007
     - Fixed Template->share when Mango has never been installed

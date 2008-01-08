@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Wishlist.pm 1821 2007-08-10T01:46:18.172257Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Wishlist.pm 1154 2008-01-06T06:40:52.146460Z claco  $
 package Mango::Wishlist;
 use strict;
 use warnings;
@@ -29,6 +29,17 @@ __PACKAGE__->storage->setup({
 });
 __PACKAGE__->result_iterator_class('Mango::Iterator');
 __PACKAGE__->create_accessors;
+
+sub items {
+    my ($self, $filter, $options) = @_;
+    $options ||= {};
+
+    $options->{'join'} = 'product';
+    $options->{'+select'} = 'product.price';
+    $options->{'+as'} = 'price';
+
+    return $self->SUPER::items($filter, $options);
+};
 
 sub type {
     Mango::Exception->throw('METHOD_NOT_IMPLEMENTED');

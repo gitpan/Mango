@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/share/forms/admin/products/attributes/create.yml 1828 2007-08-11T00:17:05.755369Z claco  $
+# $Id: /local/CPAN/Mango/trunk/share/forms/admin/products/attributes/create.yml 1959 2007-08-10T05:27:29.884596Z claco  $
 ---
 id: attributes_create
 name: attributes_create

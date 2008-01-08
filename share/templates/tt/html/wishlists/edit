@@ -1,0 +1,10 @@
+[% USE HTML %]
+
+[% IF NOT wishlist %]
+	[% page.title = c.localize('WISHLIST_NOT_FOUND') %]
+[% ELSE %]
+    [% page.title = c.localize('PAGE_TITLE_WISHLISTS_EDIT', wishlist.name) -%]
+	[% INCLUDE 'includes/errors' %]
+	[% form.render %]
+[% END %]
+

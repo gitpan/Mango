@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Plugin/Authentication/Store.pm 177 2007-05-19T00:36:49.897676Z claco  $
+# $Id: /local/CPAN/Mango/trunk/lib/Mango/Catalyst/Plugin/Authentication/Store.pm 2007 2007-11-16T03:51:15.960234Z claco  $
 package Mango::Catalyst::Plugin::Authentication::Store;
 use strict;
 use warnings;
@@ -48,9 +48,14 @@ sub find_user {
     })->first;
 
     if ($user) {
-        return Mango::Catalyst::Plugin::Authentication::User->new(
+        my $user = Mango::Catalyst::Plugin::Authentication::User->new(
             $c, $self->config, $user
         );
+
+        if ($authinfo->{'disable_sessions'}) {
+            $user->supports_sessions(undef);
+        };
+        return $user;
     } else {
         return undef;
     };

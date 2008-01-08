@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Schema/ProductAttribute.pm 132 2007-04-14T02:52:20.839536Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Schema/ProductAttribute.pm 1117 2008-01-02T03:56:54.720997Z claco  $
 package Mango::Schema::ProductAttribute;
 use strict;
 use warnings;
@@ -42,11 +42,17 @@ __PACKAGE__->add_columns(
     },
     created => {
         data_type     => 'DATETIME',
-        is_nullable   => 0
+        is_nullable   => 0,
+        extra         => {
+            timezone  => 'UTC'
+        }
     },
     updated => {
         data_type     => 'DATETIME',
-        is_nullable   => 0
+        is_nullable   => 0,
+        extra         => {
+            timezone  => 'UTC'
+        }
     }
 );
 __PACKAGE__->set_primary_key('id');

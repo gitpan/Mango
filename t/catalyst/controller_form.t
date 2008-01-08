@@ -1,5 +1,5 @@
 #!perl -wT
-# $Id: /local/Mango/trunk/t/catalyst/controller_form.t 1828 2007-08-11T00:17:05.755369Z claco  $
+# $Id: /local/CPAN/Mango/t/catalyst/controller_form.t 1146 2008-01-04T03:42:07.915948Z claco  $
 use strict;
 use warnings;
 
@@ -35,6 +35,8 @@ BEGIN {
 
 ## load forms using class2prefix
 {
+    local $ENV{'LANG'} = 'en';
+
     my $c = Mango::Test::Catalyst->new({
         config => {
             home => catdir(qw/t var/)
@@ -55,11 +57,11 @@ BEGIN {
     isa_ok($results, 'Mango::Form::Results');
     ok(!$results->success);
     is_deeply($results->errors, [
-        'ID_NOT_BLANK',
-        'SKU_NOT_BLANK',
-        'NAME_NOT_BLANK',
-        'DESCRIPTION_NOT_BLANK',
-        'PRICE_NOT_BLANK'
+        'CONSTRAINT_ID_NOT_BLANK',
+        'CONSTRAINT_SKU_NOT_BLANK',
+        'The name field is required.',
+        'CONSTRAINT_DESCRIPTION_NOT_BLANK',
+        'CONSTRAINT_PRICE_NOT_BLANK'
     ]);
 
     ## create
@@ -75,10 +77,10 @@ BEGIN {
     isa_ok($results, 'Mango::Form::Results');
     ok(!$results->success);
     is_deeply($results->errors, [
-        'SKU_NOT_BLANK',
-        'NAME_NOT_BLANK',
-        'DESCRIPTION_NOT_BLANK',
-        'PRICE_NOT_BLANK'
+        'CONSTRAINT_SKU_NOT_BLANK',
+        'The name field is required.',
+        'CONSTRAINT_DESCRIPTION_NOT_BLANK',
+        'CONSTRAINT_PRICE_NOT_BLANK'
     ]);
 
 
@@ -97,11 +99,11 @@ BEGIN {
     isa_ok($results, 'Mango::Form::Results');
     ok(!$results->success);
     is_deeply($results->errors, [
-        'ID_NOT_BLANK',
-        'SKU_NOT_BLANK',
-        'NAME_NOT_BLANK',
-        'DESCRIPTION_NOT_BLANK',
-        'PRICE_NOT_BLANK'
+        'CONSTRAINT_ID_NOT_BLANK',
+        'CONSTRAINT_SKU_NOT_BLANK',
+        'The name field is required.',
+        'CONSTRAINT_DESCRIPTION_NOT_BLANK',
+        'CONSTRAINT_PRICE_NOT_BLANK'
     ]);
 
 
@@ -111,6 +113,8 @@ BEGIN {
 
 ## load forms using form_directory
 {
+    local $ENV{'LANG'} = 'en';
+
     Mango::Catalyst::Controller::Form->config(
         form_directory => catdir(qw/share forms admin products/)
     );
@@ -134,11 +138,11 @@ BEGIN {
     isa_ok($results, 'Mango::Form::Results');
     ok(!$results->success);
     is_deeply($results->errors, [
-        'ID_NOT_BLANK',
-        'SKU_NOT_BLANK',
-        'NAME_NOT_BLANK',
-        'DESCRIPTION_NOT_BLANK',
-        'PRICE_NOT_BLANK'
+        'CONSTRAINT_ID_NOT_BLANK',
+        'CONSTRAINT_SKU_NOT_BLANK',
+        'The name field is required.',
+        'CONSTRAINT_DESCRIPTION_NOT_BLANK',
+        'CONSTRAINT_PRICE_NOT_BLANK'
     ]);
 
     ## create
@@ -154,10 +158,10 @@ BEGIN {
     isa_ok($results, 'Mango::Form::Results');
     ok(!$results->success);
     is_deeply($results->errors, [
-        'SKU_NOT_BLANK',
-        'NAME_NOT_BLANK',
-        'DESCRIPTION_NOT_BLANK',
-        'PRICE_NOT_BLANK'
+        'CONSTRAINT_SKU_NOT_BLANK',
+        'The name field is required.',
+        'CONSTRAINT_DESCRIPTION_NOT_BLANK',
+        'CONSTRAINT_PRICE_NOT_BLANK'
     ]);
 
 
@@ -176,10 +180,10 @@ BEGIN {
     isa_ok($results, 'Mango::Form::Results');
     ok(!$results->success);
     is_deeply($results->errors, [
-        'ID_NOT_BLANK',
-        'SKU_NOT_BLANK',
-        'NAME_NOT_BLANK',
-        'DESCRIPTION_NOT_BLANK',
-        'PRICE_NOT_BLANK'
+        'CONSTRAINT_ID_NOT_BLANK',
+        'CONSTRAINT_SKU_NOT_BLANK',
+        'The name field is required.',
+        'CONSTRAINT_DESCRIPTION_NOT_BLANK',
+        'CONSTRAINT_PRICE_NOT_BLANK'
     ]);
 };

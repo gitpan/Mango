@@ -1,5 +1,5 @@
 ## no critic
-# $Id$
+# $Id: /local/CPAN/Mango/trunk/lib/Mango/I18N/ru.pm 1959 2007-08-10T05:27:29.884596Z claco  $
 package Mango::I18N::ru;
 use strict;
 use warnings;

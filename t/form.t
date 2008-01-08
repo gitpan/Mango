@@ -1,5 +1,5 @@
 #!perl -wT
-# $Id: /local/Mango/trunk/t/form.t 189 2007-05-24T02:47:02.847743Z claco  $
+# $Id: /local/CPAN/Mango/t/form.t 1146 2008-01-04T03:42:07.915948Z claco  $
 use strict;
 use warnings;
 
@@ -41,10 +41,10 @@ BEGIN {
     ok(!$results->success);
     my $errors = $results->errors;
     is_deeply($errors, [
-        'SKU_NOT_BLANK',
-        'NAME_NOT_BLANK',
-        'DESCRIPTION_NOT_BLANK',
-        'PRICE_NOT_BLANK'
+        'CONSTRAINT_SKU_NOT_BLANK',
+        'The name field is required.',
+        'CONSTRAINT_DESCRIPTION_NOT_BLANK',
+        'CONSTRAINT_PRICE_NOT_BLANK'
     ]);
 
     ## too longs
@@ -60,11 +60,11 @@ BEGIN {
     ok(!$results->success);
     $errors = $results->errors;
     is_deeply($errors, [
-        'SKU_LENGTH',
-        'SKU_UNIQUE',
-        'NAME_LENGTH',
-        'DESCRIPTION_LENGTH',
-        'PRICE_DECIMAL'
+        'CONSTRAINT_SKU_LENGTH',
+        'CONSTRAINT_SKU_UNIQUE',
+        'CONSTRAINT_NAME_LENGTH',
+        'CONSTRAINT_DESCRIPTION_LENGTH',
+        'CONSTRAINT_PRICE_DECIMAL'
     ]);
 
     ## not unique
@@ -78,7 +78,7 @@ BEGIN {
     ok(!$results->success);
     $errors = $results->errors;
     is_deeply($errors, [
-        'SKU_UNIQUE'
+        'CONSTRAINT_SKU_UNIQUE'
     ]);
 
 

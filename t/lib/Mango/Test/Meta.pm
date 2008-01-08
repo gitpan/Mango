@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/t/lib/Mango/Test/Meta.pm 144 2007-04-22T23:02:40.277759Z claco  $
+# $Id: /local/CPAN/Mango/trunk/t/lib/Mango/Test/Meta.pm 1959 2007-08-10T05:27:29.884596Z claco  $
 package Mango::Test::Meta;
 use strict;
 use warnings;

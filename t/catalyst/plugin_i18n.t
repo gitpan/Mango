@@ -1,5 +1,5 @@
 #!perl -w
-# $Id: /local/Mango/trunk/t/catalyst/plugin_i18n.t 1828 2007-08-11T00:17:05.755369Z claco  $
+# $Id: /local/CPAN/Mango/trunk/t/catalyst/plugin_i18n.t 1960 2007-08-10T16:44:05.466668Z claco  $
 use strict;
 use warnings;
 use utf8;

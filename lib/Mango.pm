@@ -1,15 +1,15 @@
-# $Id: /local/Mango/trunk/lib/Mango.pm 1821 2007-08-10T01:46:18.172257Z claco  $
+# $Id: /local/CPAN/Mango/trunk/lib/Mango.pm 1979 2007-10-08T00:51:14.032126Z claco  $
 package Mango;
 use strict;
 use warnings;
 
-our $VERSION = '0.01000_06';
+our $VERSION = '0.01000_07';
 
 BEGIN {
     use base qw/Class::Accessor::Grouped/;
     use File::ShareDir ();
+    use Path::Class qw/dir/;
 };
-__PACKAGE__->share(eval {File::ShareDir::dist_dir('Mango') || $ENV{'MANGO_SHARE'}});
 
 sub share {
     my ($self, $share) = @_;
@@ -18,7 +18,15 @@ sub share {
         $self->set_inherited('share', $share);
     };
 
-    return $ENV{'MANGO_SHARE'} || $self->get_inherited('share');
+    return
+        $ENV{'MANGO_SHARE'} ||
+        $self->get_inherited('share') ||
+
+        ## use share, unless errors on local -I no share
+        eval{File::ShareDir::module_dir('Mango')} ||
+
+        ## try for -Ilib/Mango.pm../../share
+        dir($INC{'Mango.pm'})->parent->parent->subdir('share');
 };
 
 1;

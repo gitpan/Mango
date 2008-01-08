@@ -1,5 +1,5 @@
 #!perl -w
-# $Id: /local/Mango/trunk/t/catalyst/plugin_authentication_store.t 181 2007-05-20T19:33:04.774686Z claco  $
+# $Id: /local/CPAN/Mango/trunk/t/catalyst/plugin_authentication_store.t 1959 2007-08-10T05:27:29.884596Z claco  $
 use strict;
 use warnings;
 

@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/t/lib/Mango/Test/Catalyst/Request.pm 195 2007-05-27T20:19:01.994178Z claco  $
+# $Id: /local/CPAN/Mango/trunk/t/lib/Mango/Test/Catalyst/Request.pm 2005 2007-11-10T03:23:26.514111Z claco  $
 package Mango::Test::Catalyst::Request;
 use strict;
 use warnings;
@@ -20,6 +20,10 @@ sub header {
 
 sub param {
     return shift->{$_[0]};
+};
+
+sub method {
+    return 'GET';
 };
 
 1;

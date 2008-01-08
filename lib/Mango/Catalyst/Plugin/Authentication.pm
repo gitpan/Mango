@@ -1,14 +1,33 @@
-# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Plugin/Authentication.pm 1821 2007-08-10T01:46:18.172257Z claco  $
+# $Id: /local/CPAN/Mango/trunk/lib/Mango/Catalyst/Plugin/Authentication.pm 2067 2007-12-27T00:50:16.774042Z claco  $
 package Mango::Catalyst::Plugin::Authentication;
 use strict;
 use warnings;
 our $VERSION = $Mango::VERSION;
 
 BEGIN {
-    use base qw/Catalyst::Plugin::Authentication/;
+    use base qw/
+        Catalyst::Plugin::Authentication
+        Catalyst::Plugin::Authentication::Credential::HTTP
+        Catalyst::Plugin::Authorization::Roles
+    /;
 
     use Mango ();
     use Mango::I18N ();
+};
+
+sub authenticate {
+    my ($c, $userinfo, $realmname) = @_;
+    my ($husername, $hpassword) = $c->request->headers->authorization_basic;
+
+    $userinfo ||= {};
+
+    if (! $userinfo->{'username'}) {
+        $userinfo->{'username'} ||= $husername;
+        $userinfo->{'password'} ||= $hpassword;
+        $userinfo->{'disable_sessions'} = 1
+    };
+
+    return $c->NEXT::authenticate($userinfo, $realmname);
 };
 
 sub user {
@@ -29,6 +48,22 @@ sub user {
     };
 
     return;
+};
+
+sub is_admin {
+    my $c = shift;
+    my $role = $c->config->{'mango'}->{'admin_role'} || 'admin';
+
+    return $c->check_user_roles($role);
+};
+
+sub unauthorized {
+    my $c = shift;
+
+    $c->response->status(401);
+    $c->stash->{'template'} = 'errors/401';
+    $c->authorization_required(realm => $c->config->{'authentication'}->{'default_realm'});
+    $c->detach;
 };
 
 1;

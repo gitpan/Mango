@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/t/lib/Mango/Test/Catalyst/Action.pm 206 2007-05-30T16:16:19.482274Z claco  $
+# $Id: /local/CPAN/Mango/trunk/t/lib/Mango/Test/Catalyst/Action.pm 1959 2007-08-10T05:27:29.884596Z claco  $
 package Mango::Test::Catalyst::Action;
 use strict;
 use warnings;

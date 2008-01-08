@@ -1,11 +1,12 @@
 --- 
 abstract: An ecommerce solution using Catalyst, Handel and DBIx::Class
-author: Christopher H. Laco
+author: 
+  - Christopher H. Laco
 build_requires: 
   Directory::Scratch: 0
   ExtUtils::MakeMaker: 6.11
 distribution_type: module
-generated_by: Module::Install version 0.67
+generated_by: Module::Install version 0.68
 license: perl
 meta-spec: 
   url: http://module-build.sourceforge.net/META-spec-v1.3.html
@@ -17,33 +18,42 @@ no_index:
     - t
 requires: 
   CGI::FormBuilder: 0
-  Catalyst: 5.7007
-  Catalyst::Action::REST: 0.40
+  Catalyst::Action::REST: 0.60
   Catalyst::Action::RenderView: 0
   Catalyst::Component::ACCEPT_CONTEXT: 0.03
+  Catalyst::Devel: 1.02
   Catalyst::Plugin::Authentication: 0.09999
+  Catalyst::Plugin::Authentication::Credential::HTTP: 0
+  Catalyst::Plugin::Authorization::Roles: 0
+  Catalyst::Plugin::Cache: 0
   Catalyst::Plugin::ConfigLoader: 0
+  Catalyst::Plugin::Session: 0
+  Catalyst::Plugin::Session::State::Cookie: 0
+  Catalyst::Plugin::Session::Store::File: 0
   Catalyst::Plugin::Static::Simple: 0
+  Catalyst::Runtime: 5.7012
+  Catalyst::View::TT: 0
   Class::Accessor::Grouped: 0.06000
   Class::Inspector: 0
   Clone: 0.27
-  DBIx::Class: 0.08002
+  DBIx::Class: 0.08008
   DateTime: 0
   Error: 0
   File::ShareDir: 0
   FormValidator::Simple: 0.17
-  Handel: 1.00001
+  Handel: 1.00008
   I18N::LangTags: 0
   I18N::LangTags::Detect: 0
   Locale::Maketext: 0
   MIME::Types: 0
+  Module::Starter: 1.42
   Path::Class: 0
   Scalar::Util: 0
   Set::Scalar: 0
-  XML::Atom: 0.25
+  XML::Atom: 0.27
   XML::Feed: 0.12
-  XML::RSS: 1.22
+  XML::RSS: 1.31
   YAML: 0
   perl: 5.8.1
 tests: t/*.t t/*/*.t
-version: 0.01000_06
+version: 0.01000_07

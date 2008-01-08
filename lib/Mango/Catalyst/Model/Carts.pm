@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Model/Carts.pm 159 2007-05-17T21:06:34.702446Z claco  $
+# $Id: /local/CPAN/Mango/trunk/lib/Mango/Catalyst/Model/Carts.pm 1959 2007-08-10T05:27:29.884596Z claco  $
 package Mango::Catalyst::Model::Carts;
 use strict;
 use warnings;

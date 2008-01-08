@@ -3,20 +3,15 @@ use strict;
 use warnings;
 
 BEGIN {
-    use base qw/Mango::Catalyst::Controller::Form/;
+    use base qw/Mango::Catalyst::Controller/;
     use Set::Scalar ();
     use Mango ();
     use Path::Class ();
-    
-    __PACKAGE__->form_directory(
-        Path::Class::Dir->new(Mango->share, 'forms', 'admin', 'products')
+
+    __PACKAGE__->config(
+        resource_name  => 'admin/products',
+        form_directory => Path::Class::Dir->new(Mango->share, 'forms', 'admin', 'products')
     );
-};
-
-sub _parse_PathPrefix_attr {
-    my ($self, $c, $name, $value) = @_;
-
-    return PathPart => $self->path_prefix;
 };
 
 sub index : Template('admin/products/index') {
@@ -67,7 +62,7 @@ sub create : Local Template('admin/products/create') {
         };
 
         $c->response->redirect(
-            $c->uri_for('/', $self->path_prefix, $product->id, 'edit/')
+            $c->uri_for($self->action_for('edit'), [$product->id]) . '/'
         );
     };
 };
@@ -100,7 +95,8 @@ sub edit : Chained('load') PathPart Args(0) Template('admin/products/edit') {
         description => $product->description,
         price       => $product->price->value,
         tags        => join(', ', map {$_->name} @tags),
-        created     => $product->created . ''
+        created     => $product->created . '',
+        updated     => $product->updated . ''
     });
 
     if ($self->submitted && $self->validate->success) {
@@ -109,6 +105,10 @@ sub edit : Chained('load') PathPart Args(0) Template('admin/products/edit') {
         $product->description($form->field('description'));
         $product->price($form->field('price'));
         $product->update;
+
+        $form->values({
+            updated     => $product->updated . ''
+        });
 
         if (my $tags = $form->field('tags')) {
             my $current_tags = Set::Scalar->new(map {$_->name} @tags);
@@ -140,7 +140,7 @@ sub delete : Chained('load') PathPart Args(0) Template('admin/products/delete') 
             $product->destroy;
 
             $c->response->redirect(
-                $c->uri_for('/', $self->path_prefix . '/')
+                $c->uri_for($self->action_for('index')) . '/'
             );
         } else {
             $c->stash->{'errors'} = ['ID_MISTMATCH'];

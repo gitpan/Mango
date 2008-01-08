@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Schema/Order.pm 132 2007-04-14T02:52:20.839536Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Schema/Order.pm 1117 2008-01-02T03:56:54.720997Z claco  $
 package Mango::Schema::Order;
 use strict;
 use warnings;
@@ -250,12 +250,18 @@ __PACKAGE__->add_columns(
     created => {
         data_type     => 'DATETIME',
         is_nullable   => 1,
-        default_value => undef
+        default_value => undef,
+        extra         => {
+            timezone  => 'UTC'
+        }
     },
     updated => {
         data_type     => 'DATETIME',
         is_nullable   => 1,
-        default_value => undef
+        default_value => undef,
+        extra         => {
+            timezone  => 'UTC'
+        }
     },
 );
 __PACKAGE__->set_primary_key('id');

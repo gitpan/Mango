@@ -1,5 +1,5 @@
 #!perl -w
-# $Id: /local/Mango/trunk/t/pod_spelling.t 1727 2007-07-02T01:55:24.685694Z claco  $
+# $Id: /local/CPAN/Mango/t/pod_spelling.t 1121 2008-01-02T05:44:27.684523Z claco  $
 use strict;
 use warnings;
 
@@ -20,6 +20,9 @@ add_stopwords(<DATA>);
 all_pod_files_spelling_ok();
 
 __DATA__
+param
+MyApp
+myapp
 FormFile
 html
 xhtml
@@ -194,3 +197,4 @@ XPath
 xpath
 INI
 localizer
+RESTful

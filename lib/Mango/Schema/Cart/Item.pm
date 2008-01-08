@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Schema/Cart/Item.pm 135 2007-04-16T02:55:17.221512Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Schema/Cart/Item.pm 1117 2008-01-02T03:56:54.720997Z claco  $
 package Mango::Schema::Cart::Item;
 use strict;
 use warnings;
@@ -56,11 +56,17 @@ __PACKAGE__->add_columns(
     },
     created => {
         data_type     => 'DATETIME',
-        is_nullable   => 0
+        is_nullable   => 0,
+        extra         => {
+            timezone  => 'UTC'
+        }
     },
     updated => {
         data_type     => 'DATETIME',
-        is_nullable   => 0
+        is_nullable   => 0,
+        extra         => {
+            timezone  => 'UTC'
+        }
     }
 );
 __PACKAGE__->set_primary_key('id');

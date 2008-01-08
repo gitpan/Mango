@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/Makefile.PL 1821 2007-08-10T01:46:18.172257Z claco  $
+# $Id: /local/CPAN/Mango/Makefile.PL 1159 2008-01-07T03:58:38.748242Z claco  $
 use strict;
 use warnings;
 use inc::Module::Install 0.65;
@@ -9,8 +9,8 @@ license 'perl';
 perl_version '5.008001';
 all_from 'lib/Mango.pm';
 
-requires 'Handel' => '1.00001';
-requires 'DBIx::Class' => '0.08002';
+requires 'Handel' => '1.00008';
+requires 'DBIx::Class' => '0.08008';
 requires 'Class::Accessor::Grouped' => '0.06000';
 requires 'Clone' => '0.27';
 requires 'FormValidator::Simple' => '0.17';
@@ -26,16 +26,25 @@ requires 'Path::Class';
 requires 'I18N::LangTags';
 requires 'I18N::LangTags::Detect';
 requires 'MIME::Types';
-requires 'Catalyst' => '5.7007';
+requires 'Module::Starter' => '1.42';
+requires 'Catalyst::Runtime' => '5.7012';
+requires 'Catalyst::Devel' => '1.02';
+requires 'Catalyst::Plugin::Cache';
 requires 'Catalyst::Plugin::ConfigLoader';
 requires 'Catalyst::Plugin::Static::Simple';
 requires 'Catalyst::Action::RenderView';
-requires 'Catalyst::Action::REST' => '0.40';
+requires 'Catalyst::Action::REST' => '0.60';
 requires 'Catalyst::Plugin::Authentication' => '0.09999';
+requires 'Catalyst::Plugin::Authentication::Credential::HTTP';
+requires 'Catalyst::Plugin::Authorization::Roles';
+requires 'Catalyst::Plugin::Session';
+requires 'Catalyst::Plugin::Session::State::Cookie';
+requires 'Catalyst::Plugin::Session::Store::File';
 requires 'Catalyst::Component::ACCEPT_CONTEXT' => '0.03';
+requires 'Catalyst::View::TT';
 requires 'XML::Feed' => '0.12';
-requires 'XML::Atom' => '0.25';
-requires 'XML::RSS' => '1.22';
+requires 'XML::Atom' => '0.27';
+requires 'XML::RSS' => '1.31';
 requires 'YAML';
 catalyst;
 

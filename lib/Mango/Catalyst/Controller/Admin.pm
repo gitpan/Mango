@@ -3,7 +3,11 @@ use strict;
 use warnings;
 
 BEGIN {
-    use base qw/Catalyst::Controller/;
+    use base qw/Mango::Catalyst::Controller/;
+
+    __PACKAGE__->config(
+        resource_name  => 'admin'
+    );
 };
 
 sub begin : Private {

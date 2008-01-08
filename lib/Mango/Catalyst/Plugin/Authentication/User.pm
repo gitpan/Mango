@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Plugin/Authentication/User.pm 1821 2007-08-10T01:46:18.172257Z claco  $
+# $Id: /local/CPAN/Mango/trunk/lib/Mango/Catalyst/Plugin/Authentication/User.pm 2007 2007-11-16T03:51:15.960234Z claco  $
 package Mango::Catalyst::Plugin::Authentication::User;
 use strict;
 use warnings;
@@ -8,14 +8,14 @@ BEGIN {
 
     use Mango::Exception ();
 };
-__PACKAGE__->mk_accessors(qw/config _context _cart _user _profile/);
+__PACKAGE__->mk_accessors(qw/config _context _cart _user _profile supports_sessions/);
 
 sub new {
 	my ($class, $c, $config, $user) = @_;
 
 	return unless $user;
 
-	return bless {config => $config, _user => $user, _context => $c}, $class;
+	return bless {config => $config, _user => $user, _context => $c, supports_sessions => 1}, $class;
 };
 
 sub get {
@@ -39,7 +39,7 @@ sub supported_features {
     my $self = shift;
 
 	return {
-        session => 1,
+        session => $self->supports_sessions,
         roles => 1,
         profiles => 1,
         carts => 1

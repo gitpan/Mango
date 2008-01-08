@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/share/forms/admin/products/attributes/edit.yml 1813 2007-08-02T02:45:21.285386Z claco  $
+# $Id: /local/CPAN/Mango/trunk/share/forms/admin/products/attributes/edit.yml 1993 2007-10-28T02:49:40.862930Z claco  $
 ---
 id: attributes_edit
 name: attributes_edit
@@ -30,6 +30,10 @@ fields:
         - NOT_BLANK
         - LENGTH, 1, 255
   - created:
+      type: text
+      size: 20
+      disabled: 1
+  - updated:
       type: text
       size: 20
       disabled: 1

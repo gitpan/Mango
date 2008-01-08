@@ -1,30 +1,29 @@
-# $Id: /local/Mango/trunk/t/lib/Mango/Test.pm 153 2007-05-13T01:25:27.856042Z claco  $
+# $Id: /local/CPAN/Mango/t/lib/Mango/Test.pm 1126 2008-01-03T22:52:40.007904Z claco  $
 package Mango::Test;
 use strict;
 use warnings;
 
 BEGIN {
     # little trick by Ovid to pretend to subclass+exporter Test::More
-    use base qw/Test::Builder::Module Class::Accessor::Grouped/;
+    use base qw/Test::Builder::Module/;
     use Test::More;
-    use File::Spec::Functions qw/catfile catdir/;
+    use Catalyst::Utils ();
+    use Catalyst::Helper::Mango ();
+    use Cwd ();
     use DateTime ();
+    use File::Temp ();
+    use File::Spec::Functions qw/catdir catfile/;
+    use YAML ();
 
+    $ENV{'CATALYST_DEBUG'} = 0;
     @Mango::Test::EXPORT = @Test::More::EXPORT;
-
-    __PACKAGE__->mk_group_accessors('inherited', qw/db_dir db_file/);
 };
 
-__PACKAGE__->db_dir(catdir('t', 'var'));
-__PACKAGE__->db_file('mango.db');
 
 ## cribbed and modified from DBICTest in DBIx::Class tests
 sub init_schema {
     my ($self, %args) = @_;
-    my $db_dir  = $args{'db_dir'}  || $self->db_dir;
-    my $db_file = $args{'db_file'} || $self->db_file;
     my $namespace = $args{'namespace'} || 'Mango::TestSchema';
-    my $db = catfile($db_dir, $db_file);
 
     eval 'use DBD::SQLite';
     if ($@) {
@@ -40,12 +39,15 @@ sub init_schema {
         return;
     };
 
-    unlink($db) if -e $db;
-    unlink($db . '-journal') if -e $db . '-journal';
-    mkdir($db_dir) unless -d $db_dir;
-
-    my $dsn = 'dbi:SQLite:' . $db;
-    my $schema = Mango::Test::Schema->compose_namespace($namespace)->connect($dsn, undef, undef, {AutoCommit => 1});
+    my $temp = File::Temp->new(
+        SUFFIX => '.db',
+        EXLOCK => 0,
+        UNLINK => 0
+    );
+    my $dsn = "dbi:SQLite:$temp";undef $temp;
+    my $schema = Mango::Test::Schema->compose_namespace($namespace)->connect(
+        $dsn, undef, undef, {AutoCommit => 1}
+    );
     $schema->storage->on_connect_do([
         'PRAGMA synchronous = OFF',
         'PRAGMA temp_store = MEMORY'
@@ -196,6 +198,45 @@ sub populate_schema {
         [1,2],
         [3,3],
     ]);
+};
+
+
+## create test catalyst app
+sub mk_app {
+    my $class  = shift;
+    my $app    = shift || 'TestApp';
+    my $prefix = Catalyst::Utils::appprefix($app);
+    my $cwd    = Cwd::cwd;
+    my $temp   = File::Temp::tempdir(
+        undef,
+        EXLOCK  => 0,
+        UNLINK  => 0,
+        CLEANUP => 0
+    );
+    my @dir    = split(/\:\:/, $app);
+    my $lib    = catdir($temp, @dir, 'lib');
+    my $helper = Catalyst::Helper::Mango->new;
+
+    eval "use lib '$lib';";
+
+    chdir $temp;
+    $helper->mk_app($app);
+
+    my $config = YAML::LoadFile(
+        catfile($app, "$prefix.yml")
+    );
+    $config->{'connection_info'}->[0] = 'dbi:SQLite:' . catfile($temp, @dir, 'data', 'mango.db');
+    YAML::DumpFile(catfile($app, "$prefix.yml"), $config);
+
+    chdir($cwd);
+
+    $ENV{'CATALYST_DEBUG'} = 0;
+    require Test::WWW::Mechanize::Catalyst;
+    Test::WWW::Mechanize::Catalyst->import('TestApp');
+
+    @INC = @lib::ORIG_INC;
+
+    return catdir($temp, @dir);
 };
 
 1;

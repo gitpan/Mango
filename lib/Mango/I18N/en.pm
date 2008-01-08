@@ -1,5 +1,5 @@
 ## no critic
-# $Id: /local/Mango/trunk/lib/Mango/I18N/en.pm 1813 2007-08-02T02:45:21.285386Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/I18N/en.pm 1159 2008-01-07T03:58:38.748242Z claco  $
 package Mango::I18N::en;
 use strict;
 use warnings;
@@ -77,6 +77,92 @@ BEGIN {
         'The default realm is not \'mango\'',
     LOGIN_FAILED =>
         'The username or password are incorrect.',
+    LOGIN_SUCCEEDED =>
+        'Login successful!',
+    LOGIN_REQUIRED =>
+        'You must be logged in first!',
+    LOGOUT_SUCCEEDED =>
+        'Logout successful!',
+    ALREADY_LOGGED_IN =>
+        'You are already logged in!',
+    USERNAME_NOT_BLANK =>
+        'The username field is required.',
+    PASSWORD_NOT_BLANK =>
+        'The password field is required.',
+    CART_IS_EMPTY =>
+        'Your shopping cart is empty.',
+    WISHLIST_IS_EMPTY =>
+        'This wishlist is empty.',
+    NO_WISHLISTS =>
+        'You currently have no wishlists.',
+    NO_DESCRIPTION_AVAILABLE =>
+        'No description available.',
+
+
+
+    ## page titles
+    PAGE_TITLE_HOME =>
+        'Welcome!',
+    PAGE_TITLE_CART =>
+        'Cart',
+    PAGE_TITLE_LOGIN =>
+        'Login',
+    PAGE_TITLE_LOGOUT =>
+        'Logout',
+    PAGE_TITLE_PRODUCTS =>
+        'Products',
+    PAGE_TITLE_WISHLISTS =>
+        'Wishlists',
+    PAGE_TITLE_WISHLISTS_EDIT =>
+        'Editing [_1]',
+
+
+    ## link text
+    LINK_TEXT_HOME =>
+        'Home',
+    LINK_TEXT_ADMIN =>
+        'Admin',
+    LINK_TEXT_CART =>
+        'Cart',
+    LINK_TEXT_LOGIN =>
+        'Login',
+    LINK_TEXT_LOGOUT =>
+        'Logout',
+    LINK_TEXT_PRODUCTS =>
+        'Products',
+    LINK_TEXT_WISHLISTS =>
+        'Wishlists',
+    LINK_TEXT_EDIT =>
+        'Edit',
+
+
+    ## field label text
+    FIELD_LABEL_USERNAME =>
+        'Username',
+    FIELD_LABEL_PASSWORD =>
+        'Password',
+    FIELD_LABEL_QUANTITY =>
+        'Quantity',
+
+
+    ## form button text
+    BUTTON_LABEL_LOGIN =>
+        'Login',
+    BUTTON_LABEL_ADD_TO_CART =>
+        'Add to Cart',
+
+
+    ## form constraint messages
+    CONSTRAINT_USERNAME_NOT_BLANK =>
+        'The username field is required.',
+    CONSTRAINT_PASSWORD_NOT_BLANK =>
+        'The password field is required.',
+    CONSTRAINT_NAME_NOT_BLANK =>
+        'The name field is required.',
+    CONSTRAINT_SKU_EXISTS =>
+        'The sku or part requested could not be found.',
+    CONSTRAINT_QUANTITY_UINT =>
+        'Quantity must be a positive number.'
 );
 
 1;

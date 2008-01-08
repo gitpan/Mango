@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Schema/Order/Item.pm 135 2007-04-16T02:55:17.221512Z claco  $
+# $Id: /local/CPAN/Mango/trunk/lib/Mango/Schema/Order/Item.pm 1959 2007-08-10T05:27:29.884596Z claco  $
 package Mango::Schema::Order::Item;
 use strict;
 use warnings;

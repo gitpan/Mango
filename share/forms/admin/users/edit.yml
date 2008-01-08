@@ -1,12 +1,12 @@
-# $Id: /local/Mango/trunk/share/forms/admin/users/edit.yml 1828 2007-08-11T00:17:05.755369Z claco  $
+# $Id: /local/CPAN/Mango/share/forms/admin/users/edit.yml 1123 2008-01-03T04:02:55.699073Z claco  $
 ---
-id: users_edit
-name: users_edit
+id: users_update
+name: users_update
 method: POST
 javascript: 0
 stylesheet: 1
 sticky: 1
-submit: LABEL_UPDATE
+submit: BUTTON_LABEL_UPDATE
 fields:
   - id:
       type: hidden
@@ -39,6 +39,9 @@ fields:
         - LENGTH, 1, 255
         - SAME_AS, password
   - created:
+      size: 20
+      disabled: 1
+  - updated:
       size: 20
       disabled: 1
   - first_name:

@@ -1,4 +1,4 @@
-# $Id: /local/Mango/trunk/lib/Mango/Provider/Orders.pm 1821 2007-08-10T01:46:18.172257Z claco  $
+# $Id: /local/CPAN/Mango/trunk/lib/Mango/Provider/Orders.pm 1959 2007-08-10T05:27:29.884596Z claco  $
 package Mango::Provider::Orders;
 use strict;
 use warnings;

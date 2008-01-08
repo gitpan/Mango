@@ -3,20 +3,15 @@ use strict;
 use warnings;
 
 BEGIN {
-    use base qw/Mango::Catalyst::Controller::Form/;
+    use base qw/Mango::Catalyst::Controller/;
     use Set::Scalar ();
     use Mango ();
     use Path::Class ();
-    
-    __PACKAGE__->form_directory(
-        Path::Class::Dir->new(Mango->share, 'forms', 'admin', 'users')
+
+    __PACKAGE__->config(
+        resource_name  => 'admin/users',
+        form_directory => Path::Class::Dir->new(Mango->share, 'forms', 'admin', 'users')
     );
-};
-
-sub _parse_PathPrefix_attr {
-    my ($self, $c, $name, $value) = @_;
-
-    return PathPart => $self->path_prefix;
 };
 
 sub index : Template('admin/users/index') {
@@ -78,8 +73,8 @@ sub create : Local Template('admin/users/create') {
             $c->model('Roles')->add_user($role, $user);
         };
 
-        $c->response->redirect(
-            $c->uri_for('/', $self->path_prefix, $user->id, 'edit/')
+        $c->res->redirect(
+            $c->uri_for($self->action_for('edit'), [$user->id]) . '/'
         );
     };
 };
@@ -101,6 +96,7 @@ sub edit : Chained('load') PathPart Args(0) Template('admin/users/edit') {
         password         => $user->password,
         confirm_password => $user->password,
         created          => $user->created . '',
+        updated          => $user->updated . '',
         first_name       => $profile->first_name,
         last_name        => $profile->last_name,
         
@@ -122,6 +118,10 @@ sub edit : Chained('load') PathPart Args(0) Template('admin/users/edit') {
 
         $user->password($form->field('password'));
         $user->update;
+
+        $form->values({
+            updated     => $user->updated . ''
+        });
 
         $profile->first_name($form->field('first_name'));
         $profile->last_name($form->field('last_name'));
@@ -174,8 +174,8 @@ sub delete : Chained('load') PathPart Args(0) Template('admin/users/delete') {
             ## delete user
             $user->destroy;
 
-            $c->response->redirect(
-                $c->uri_for('/', $self->path_prefix . '/')
+            $c->res->redirect(
+                $c->uri_for($self->action_for('index')) . '/'
             );
         } else {
             $c->stash->{'errors'} = ['ID_MISTMATCH'];

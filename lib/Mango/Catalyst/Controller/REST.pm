@@ -1,25 +1,29 @@
-# $Id: /local/Mango/trunk/lib/Mango/Catalyst/Controller/REST.pm 1821 2007-08-10T01:46:18.172257Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/REST.pm 1146 2008-01-04T03:42:07.915948Z claco  $
 package Mango::Catalyst::Controller::REST;
 use strict;
 use warnings;
 
 BEGIN {
     use base qw/Catalyst::Controller::REST/;
-    use MIME::Types;
-};
+    use MIME::Types ();
+    use Scalar::Util ();
 
-__PACKAGE__->config(
-    serialize => {
+    __PACKAGE__->config(
         'stash_key' => 'entity',
+        'default'   => 'text/html',
         'map'       => {
             'text/plain'            => [qw/View Text/],
             'text/html'             => [qw/View HTML/],
             'application/xhtml+xml' => [qw/View XHTML/],
             'application/rss+xml'   => [qw/View RSS/],
             'application/atom+xml'  => [qw/View Atom/],
+
+            ## remap unwanted accepted types until we get more REST
+            ## config for weighting
+            'text/xml'             => [qw/View HTML/],
         }
-    }
-);
+    );
+};
 
 my $mimes = MIME::Types->new;
 $mimes->addType(
@@ -53,15 +57,132 @@ $mimes->addType(
     )
 );
 
-sub begin : Private {
-    my ($self, $c) = @_;
-    my $view = $c->request->param('view') || 'html';
+sub ACCEPT_CONTEXT {
+    my $self = shift;
+    my $c = shift;
 
-    $c->request->content_type(
-        $mimes->mimeTypeOf($view)
-    ) if $view;
+    ## friendly view name overrides header
+    my $view = $c->request->param('view');
+    if ($view) {
+        $c->request->content_type(
+            $mimes->mimeTypeOf($view)
+        );
+    };
 
-    $self->NEXT::begin($c);
+    ## type param overrides headerß
+    my $type = $c->request->param('content-type');
+    if ($type) {
+        $c ->request->content_type($type);
+    };
+
+    ## change method if we're faking it through crippled client POST
+    if ($c->request->method eq 'POST' && $c->request->param('_method')) {
+        $c->request->method(uc $c->request->param('_method'));
+    };
+
+    return $self->NEXT::ACCEPT_CONTEXT($c, @_) || $self;
+};
+
+sub end : ActionClass('Serialize') {
+    my $self = shift;
+    my $c = shift;
+    $self->NEXT::end($c, @_);
+
+    $c->response->content_type($c->request->preferred_content_type);
+    $c->response->body('');
+};
+
+sub entity {
+    my ($self, $data, $pager) = @_;
+    my $key = $self->{'serialize'}->{'stash_key'};
+
+    if (defined $data) {
+        if (Scalar::Util::blessed $pager && $pager->isa('Data::Page')) {
+            $data->{'current_page'}     = $pager->current_page;
+            $data->{'entries_per_page'} = $pager->entries_per_page;
+            $data->{'total_entries'}    = $pager->total_entries;
+            $data->{'first_page'}       = $pager->first_page;
+            $data->{'last_page'}        = $pager->last_page;
+        };
+
+        $self->context->stash->{$key} = $data;
+    };
+
+    return $self->context->stash->{$key} || $self->context->request->data;
+};
+
+sub wants_atom {
+    my $self = shift;
+    my $c = $self->context;
+
+    return $c->request->preferred_content_type eq
+        $mimes->mimeTypeOf('atom');
+};
+
+sub wants_rss {
+    my $self = shift;
+    my $c = $self->context;
+
+    return $c->request->preferred_content_type eq
+        $mimes->mimeTypeOf('rss');
+};
+
+sub wants_json {
+    my $self = shift;
+    my $c = $self->context;
+
+    return $c->request->preferred_content_type eq
+        $mimes->mimeTypeOf('json');
+};
+
+sub wants_yaml {
+    my $self = shift;
+    my $c = $self->context;
+
+    return $c->request->preferred_content_type eq
+        $mimes->mimeTypeOf('yaml');
+};
+
+sub wants_html {
+    my $self = shift;
+    my $c = $self->context;
+
+    return $c->request->preferred_content_type eq
+        $mimes->mimeTypeOf('html');
+};
+
+sub wants_xhtml {
+    my $self = shift;
+    my $c = $self->context;
+
+    return $c->request->preferred_content_type eq
+        $mimes->mimeTypeOf('xhtml');
+};
+
+sub wants_text {
+    my $self = shift;
+    my $c = $self->context;
+
+    return $c->request->preferred_content_type eq
+        $mimes->mimeTypeOf('text');
+};
+
+sub wants_browser {
+    my $self = shift;
+    my $c = $self->context;
+
+    return $self->wants_html ||
+        $self->wants_xhtml ||
+        $self->wants_text ||
+        $c->request->preferred_content_type eq
+            'application/x-www-form-urlencoded';
+};
+
+sub wants_feed {
+    my $self = shift;
+
+    return $self->wants_atom ||
+        $self->wants_rss;
 };
 
 1;
