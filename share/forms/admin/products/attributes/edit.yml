@@ -1,7 +1,7 @@
-# $Id: /local/CPAN/Mango/trunk/share/forms/admin/products/attributes/edit.yml 1993 2007-10-28T02:49:40.862930Z claco  $
+# $Id: /local/CPAN/Mango/share/forms/admin/products/attributes/edit.yml 1185 2008-01-13T03:21:52.605766Z claco  $
 ---
-id: attributes_edit
-name: attributes_edit
+id: admin_products_attributes_edit
+name: admin_products_attributes_edit
 method: POST
 javascript: 0
 stylesheet: 1

@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/Makefile.PL 1159 2008-01-07T03:58:38.748242Z claco  $
+# $Id: /local/CPAN/Mango/Makefile.PL 1173 2008-01-11T03:19:05.005629Z claco  $
 use strict;
 use warnings;
 use inc::Module::Install 0.65;
@@ -9,7 +9,7 @@ license 'perl';
 perl_version '5.008001';
 all_from 'lib/Mango.pm';
 
-requires 'Handel' => '1.00008';
+requires 'Handel' => '1.00009';
 requires 'DBIx::Class' => '0.08008';
 requires 'Class::Accessor::Grouped' => '0.06000';
 requires 'Clone' => '0.27';

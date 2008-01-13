@@ -1,5 +1,5 @@
-#!perl -wT
-# $Id: /local/CPAN/Mango/trunk/t/catalyst/view_atom.t 1959 2007-08-10T05:27:29.884596Z claco  $
+#!perl -w
+# $Id: /local/CPAN/Mango/t/catalyst/view_atom.t 1178 2008-01-12T22:02:39.964689Z claco  $
 use strict;
 use warnings;
 

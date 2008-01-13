@@ -139,6 +139,16 @@ sub mk_database {
         });
         print "created admin user/pass ($adminuser:$adminpass)\n";
 
+        $schema->resultset('Profiles')->create({
+            id => 1,
+            user_id => 1,
+            first_name => 'Admin',
+            last_name => 'User',
+            created => DateTime->now,
+            updated => DateTime->now
+        });
+        print "created admin profile\n";
+
         $schema->resultset('Roles')->create({
             id => 1,
             name => $adminrole,
@@ -195,6 +205,7 @@ sub mk_config {
         default_realm => 'mango',
         realms => {
             mango => {
+                auto_update_user => 0,
                 credential => {
                     class => 'Password',
                     password_field => 'password',
@@ -283,6 +294,7 @@ sub mk_controllers {
         file($c, 'Admin', 'Products', 'Attributes.pm'));
 
     ## current user
+    $self->mk_dir(dir($c, 'Cart'));
     $self->mk_dir(dir($c, 'Wishlists'));
 
     $self->render_file('controller_login',
@@ -291,20 +303,24 @@ sub mk_controllers {
         file($c, 'Logout.pm'));
     $self->render_file('controller_cart',
         file($c, 'Cart.pm'));
+    $self->render_file('controller_cart_items',
+        file($c, 'Cart', 'Items.pm'));
     $self->render_file('controller_wishlists',
         file($c, 'Wishlists.pm'));
     $self->render_file('controller_wishlists_items',
         file($c, 'Wishlists', 'Items.pm'));
+    $self->render_file('controller_settings',
+        file($c, 'Settings.pm'));
 
     ## public
     $self->mk_dir(dir($c, 'Users'));
 
     $self->render_file('controller_products',
         file($c, 'Products.pm'));
-    #$self->render_file('controller_users',
-    #    file($c, 'Users.pm'));
-    #$self->render_file('controller_users_wishlists',
-    #    file($c, 'Users', 'Wishlists.pm'));
+    $self->render_file('controller_users',
+        file($c, 'Users.pm'));
+    $self->render_file('controller_users_wishlists',
+        file($c, 'Users', 'Wishlists.pm'));
 
     ## rest
     $self->mk_dir(dir($c, 'REST'));
@@ -465,6 +481,16 @@ BEGIN {
 };
 
 1;
+__controller_cart_items__
+package [% name %]::Controller::Cart::Items;
+use strict;
+use warnings;
+
+BEGIN {
+    use base qw/Mango::Catalyst::Controller::Cart::Items/;
+};
+
+1;
 __controller_wishlists__
 package [% name %]::Controller::Wishlists;
 use strict;
@@ -502,6 +528,16 @@ use warnings;
 
 BEGIN {
     use base qw/Mango::Catalyst::Controller::Logout/;
+};
+
+1;
+__controller_settings__
+package [% name %]::Controller::Settings;
+use strict;
+use warnings;
+
+BEGIN {
+    use base qw/Mango::Catalyst::Controller::Settings/;
 };
 
 1;

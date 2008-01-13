@@ -9,7 +9,7 @@ BEGIN {
     use Path::Class::Dir ();
 
     __PACKAGE__->config(
-        resource_name  => 'wishlists/items',
+        resource_name  => 'mango/wishlists/items',
         form_directory => Path::Class::Dir->new(Mango->share, 'forms', 'wishlists', 'items')
     );
 };
@@ -40,7 +40,7 @@ sub update : Chained('instance') PathPart Args(0) Template('wishlists/view') {
         $item->update;
 
         $c->res->redirect(
-            $c->uri_for_resource('wishlists', 'view', [$wishlist->id]) . '/'
+            $c->uri_for_resource('mango/wishlists', 'view', [$wishlist->id]) . '/'
         );
     };
 
@@ -55,11 +55,11 @@ sub delete : Chained('instance') PathPart Args(0) Template('wishlists/view') {
 
     if ($self->submitted && $self->validate->success) {
         $wishlist->delete({
-            id => $form->field('id')
+            id => $item->id
         });
 
         $c->res->redirect(
-            $c->uri_for_resource('wishlists', 'view', [$wishlist->id]) . '/'
+            $c->uri_for_resource('mango/wishlists', 'view', [$wishlist->id]) . '/'
         );
     };
 

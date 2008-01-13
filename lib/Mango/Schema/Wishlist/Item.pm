@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Schema/Wishlist/Item.pm 1154 2008-01-06T06:40:52.146460Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Schema/Wishlist/Item.pm 1169 2008-01-10T04:21:54.877465Z claco  $
 package Mango::Schema::Wishlist::Item;
 use strict;
 use warnings;
@@ -69,7 +69,8 @@ __PACKAGE__->belongs_to(wishlist => 'Mango::Schema::Wishlist',
     {'foreign.id' => 'self.wishlist_id'}
 );
 __PACKAGE__->might_have(product => 'Mango::Schema::Product',
-    {'foreign.sku' => 'self.sku'}
+    {'foreign.sku'    => 'self.sku'},
+    {'cascade_delete' => 0}
 );
 __PACKAGE__->default_values({
     created => sub {DateTime->now},

@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/trunk/lib/Mango/Catalyst/Plugin/Authentication/User.pm 2007 2007-11-16T03:51:15.960234Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Plugin/Authentication/User.pm 1175 2008-01-12T05:03:21.523485Z claco  $
 package Mango::Catalyst::Plugin::Authentication::User;
 use strict;
 use warnings;
@@ -44,6 +44,12 @@ sub supported_features {
         profiles => 1,
         carts => 1
 	};
+};
+
+sub refresh {
+    my $self = shift;
+
+    $self->_context->session->{'__user'}->{'profile'} = {$self->profile->get_columns};
 };
 
 sub roles {

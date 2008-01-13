@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/trunk/lib/Mango/Cart.pm 1959 2007-08-10T05:27:29.884596Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Cart.pm 1169 2008-01-10T04:21:54.877465Z claco  $
 package Mango::Cart;
 use strict;
 use warnings;
@@ -29,6 +29,10 @@ __PACKAGE__->storage->setup({
 });
 __PACKAGE__->result_iterator_class('Mango::Iterator');
 __PACKAGE__->create_accessors;
+
+sub name {};
+
+sub description {};
 
 sub type {
     Mango::Exception->throw('METHOD_NOT_IMPLEMENTED');

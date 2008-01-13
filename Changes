@@ -1,5 +1,13 @@
-# $Id: /local/CPAN/Mango/Changes 1161 2008-01-08T00:08:18.909009Z claco  $
+# $Id: /local/CPAN/Mango/Changes 1185 2008-01-13T03:21:52.605766Z claco  $
 This file documents the revision history for Perl extension Mango.
+
+0.01000_08 Sat Jan 12 22:20:37 2008
+    - Added wishlist restore plus tests
+    - Added Users/Wishlists public views with tests
+    - Renamed resource names
+    - mango.pl adds profile to go with 'admin' user
+    - Split Cart into Cart/Items just like Wishlists/Items
+    - Added sign up page and tests
 
 0.01000_07 Mon Jan 7 19:07:23 2008
     - Added Catalyst::View::TT/Session/Cookie/Store to PREREQ

@@ -1,5 +1,5 @@
-#!perl -wT
-# $Id$
+#!perl -w
+# $Id: /local/CPAN/Mango/t/meta.t 1187 2008-01-13T03:25:07.767826Z claco  $
 use strict;
 use warnings;
 

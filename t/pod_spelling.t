@@ -1,5 +1,5 @@
 #!perl -w
-# $Id: /local/CPAN/Mango/t/pod_spelling.t 1121 2008-01-02T05:44:27.684523Z claco  $
+# $Id: /local/CPAN/Mango/t/pod_spelling.t 1187 2008-01-13T03:25:07.767826Z claco  $
 use strict;
 use warnings;
 

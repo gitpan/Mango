@@ -1,5 +1,5 @@
-#!perl -wT
-# $Id: /local/CPAN/Mango/trunk/t/pod_coverage.t 2007 2007-11-16T03:51:15.960234Z claco  $
+#!perl -w
+# $Id: /local/CPAN/Mango/t/pod_coverage.t 1187 2008-01-13T03:25:07.767826Z claco  $
 use strict;
 use warnings;
 

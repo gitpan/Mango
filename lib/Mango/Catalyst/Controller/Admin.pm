@@ -6,11 +6,11 @@ BEGIN {
     use base qw/Mango::Catalyst::Controller/;
 
     __PACKAGE__->config(
-        resource_name  => 'admin'
+        resource_name  => 'mango/admin'
     );
 };
 
-sub begin : Private {
+sub auto : Private {
     my ($self, $c) = @_;
 
     if (!$c->check_user_roles('admin')) {
@@ -18,6 +18,8 @@ sub begin : Private {
         $c->stash->{'template'} = 'errors/401';
         $c->detach;
     };
+
+    return 1;
 };
 
 sub index : Template('admin/index') {

@@ -1,5 +1,5 @@
 ## no critic
-# $Id: /local/CPAN/Mango/lib/Mango/I18N/en.pm 1159 2008-01-07T03:58:38.748242Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/I18N/en.pm 1185 2008-01-13T03:21:52.605766Z claco  $
 package Mango::I18N::en;
 use strict;
 use warnings;
@@ -97,7 +97,12 @@ BEGIN {
         'You currently have no wishlists.',
     NO_DESCRIPTION_AVAILABLE =>
         'No description available.',
-
+    USER_NOT_FOUND =>
+        'The user requested could not be found.',
+    WISHLIST_NOT_FOUND =>
+        'The wishlist requested could not be found.',
+    USERNAME_EXISTS =>
+        'The username requested already exists.',
 
 
     ## page titles
@@ -113,8 +118,16 @@ BEGIN {
         'Products',
     PAGE_TITLE_WISHLISTS =>
         'Wishlists',
+    PAGE_TITLE_SETTINGS_PROFILE =>
+        'Profile',
     PAGE_TITLE_WISHLISTS_EDIT =>
         'Editing [_1]',
+    PAGE_TITLE_USERS_VIEW =>
+        '[_1]\'s Profile',
+    PAGE_TITLE_USERS_WISHLISTS =>
+        '[_1]\'s Wishlists',
+    PAGE_TITLE_USERS_CREATE =>
+        'Sign Up!',
 
 
     ## link text
@@ -132,8 +145,16 @@ BEGIN {
         'Products',
     LINK_TEXT_WISHLISTS =>
         'Wishlists',
+    LINK_TEXT_SETTINGS_PROFILE =>
+        'Profile',
     LINK_TEXT_EDIT =>
         'Edit',
+    LINK_TEXT_USERS_VIEW =>
+        '[_1]\'s Profile' =>
+    LINK_TEXT_USERS_WISHLISTS =>
+        '[_1]\'s Wishlists',
+    LINK_TEXT_USERS_CREATE =>
+        'Sign Up!',
 
 
     ## field label text

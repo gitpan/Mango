@@ -1,5 +1,5 @@
-#!perl -wT
-# $Id: /local/CPAN/Mango/trunk/t/iterator.t 1959 2007-08-10T05:27:29.884596Z claco  $
+#!perl -w
+# $Id: /local/CPAN/Mango/t/iterator.t 1187 2008-01-13T03:25:07.767826Z claco  $
 use strict;
 use warnings;
 

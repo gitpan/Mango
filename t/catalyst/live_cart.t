@@ -33,6 +33,7 @@ BEGIN {
 {
     my $m = Test::WWW::Mechanize::Catalyst->new;
 
+
     ## cart is empty
     $m->get_ok('http://localhost/');
     $m->follow_link_ok({text => 'Cart'});
@@ -79,7 +80,7 @@ BEGIN {
 
     ## update quantity
     $m->submit_form_ok({
-        form_name => 'cart_update',
+        form_name => 'cart_items_update',
         fields    => {
             quantity => 3
         }
@@ -93,7 +94,7 @@ BEGIN {
 
     ## update with non numeric
     $m->submit_form_ok({
-        form_name => 'cart_update',
+        form_name => 'cart_items_update',
         fields    => {
             quantity => 'a'
         }
@@ -135,7 +136,7 @@ BEGIN {
     {
         local $SIG{__WARN__} = sub {};
         $m->submit_form_ok({
-            form_name => 'cart_delete'
+            form_name => 'cart_items_delete'
         });
     };
     $m->title_like(qr/cart/i);
