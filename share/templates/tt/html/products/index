@@ -1,7 +1,0 @@
-[% page.title = c.localize('PAGE_TITLE_PRODUCTS') %]
-[% INCLUDE 'includes/errors' %]
-
-[% c.forms('cart_add').render('values', ['ABC-123']) %]
-
-
-[% c.forms('cart_add').render('values', ['NOEXISTO']) %]

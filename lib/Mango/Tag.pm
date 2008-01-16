@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/trunk/lib/Mango/Tag.pm 1959 2007-08-10T05:27:29.884596Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Tag.pm 1191 2008-01-14T03:37:39.681041Z claco  $
 package Mango::Tag;
 use strict;
 use warnings;
@@ -11,7 +11,7 @@ BEGIN {
 };
 
 sub count {
-    return 0;
+    return shift->{'count'} || 0;
 };
 
 sub destroy {

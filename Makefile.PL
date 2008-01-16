@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/Makefile.PL 1173 2008-01-11T03:19:05.005629Z claco  $
+# $Id: /local/CPAN/Mango/Makefile.PL 1196 2008-01-16T03:57:25.091559Z claco  $
 use strict;
 use warnings;
 use inc::Module::Install 0.65;
@@ -18,6 +18,7 @@ requires 'CGI::FormBuilder';
 requires 'File::ShareDir';
 requires 'DateTime';
 requires 'Error';
+requires 'HTML::TagCloud::Sortable';
 requires 'Locale::Maketext';
 requires 'Scalar::Util';
 requires 'Set::Scalar';

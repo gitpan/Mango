@@ -1,5 +1,5 @@
 #!perl -w
-# $Id: /local/CPAN/Mango/t/provider_products.t 1187 2008-01-13T03:25:07.767826Z claco  $
+# $Id: /local/CPAN/Mango/t/provider_products.t 1191 2008-01-14T03:37:39.681041Z claco  $
 use strict;
 use warnings;
 
@@ -11,7 +11,7 @@ BEGIN {
     if($@) {
         plan skip_all => 'DBD::SQLite not installed';
     } else {
-        plan tests => 381
+        plan tests => 382
     };
 
     use_ok('Mango::Provider::Products');
@@ -403,13 +403,14 @@ isa_ok($provider, 'Mango::Provider::Products');
     is($tag->id, 2);
     is($tag->name, 'Tag2');
     is($tag->created, '2004-07-04T12:00:00');
-    is($tag->count, 0);
+    is($tag->count, 1);
 
     $tag = $tags->next;
     isa_ok($tag, 'Mango::Tag');
     is($tag->id, 1);
     is($tag->name, 'Tag1');
     is($tag->created, '2004-07-04T12:00:00');
+    is($tag->count, 1);
 };
 
 

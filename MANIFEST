@@ -169,7 +169,8 @@ share/templates/tt/html/includes/users/menu
 share/templates/tt/html/index
 share/templates/tt/html/login/index
 share/templates/tt/html/logout/index
-share/templates/tt/html/products/index
+share/templates/tt/html/products/list
+share/templates/tt/html/products/view
 share/templates/tt/html/settings/profile
 share/templates/tt/html/users/create
 share/templates/tt/html/users/view
@@ -183,6 +184,7 @@ t/catalyst/controller_form.t
 t/catalyst/controller_rest.t
 t/catalyst/live_cart.t
 t/catalyst/live_login.t
+t/catalyst/live_products.t
 t/catalyst/live_rest_users.t
 t/catalyst/live_settings_profile.t
 t/catalyst/live_users.t

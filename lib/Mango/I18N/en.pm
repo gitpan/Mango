@@ -1,5 +1,5 @@
 ## no critic
-# $Id: /local/CPAN/Mango/lib/Mango/I18N/en.pm 1185 2008-01-13T03:21:52.605766Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/I18N/en.pm 1196 2008-01-16T03:57:25.091559Z claco  $
 package Mango::I18N::en;
 use strict;
 use warnings;
@@ -103,6 +103,8 @@ BEGIN {
         'The wishlist requested could not be found.',
     USERNAME_EXISTS =>
         'The username requested already exists.',
+    PRODUCT_NOT_FOUND =>
+        'The product requested could not be found.',
 
 
     ## page titles

@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/trunk/lib/Mango/Provider/Products.pm 1993 2007-10-28T02:49:40.862930Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Provider/Products.pm 1196 2008-01-16T03:57:25.091559Z claco  $
 package Mango::Provider::Products;
 use strict;
 use warnings;
@@ -305,9 +305,14 @@ sub tags {
         $pfilter->{"tag.$key"} = delete $filter->{$key};
     };
 
+    $options->{'group_by'} = ['tag.id', 'tag.name', 'tag.created', 'tag.updated'];
+    $options->{'+select'} = [{'count' => 'tag.name'}];
+    $options->{'+as'} = ['count'];
+
     my @results = map {
         $self->tag_class->new({
             $_->get_inflated_columns,
+            count => $_->get_column('count'),
             meta => {
                 provider => $self
             }
@@ -317,6 +322,38 @@ sub tags {
     )->related_resultset('map_product_tag')->related_resultset('tag')->search(
         $filter, $options
     )->all;
+
+    if (wantarray) {
+        return @results;
+    } else {
+        return Mango::Iterator->new({
+            data => \@results
+        });
+    };
+};
+
+sub related_tags {
+    my ($self, $filter, $options) = @_;
+
+    $filter ||= {};
+    $options ||= {};
+    $filter->{'products'} ||= {};
+
+    my $tags = delete $filter->{'tags'} || [];
+    my @ids = map {
+        $_->id 
+    } $self->search({
+        tags => $tags
+    }, {
+        select => 'me.id'
+    })->all;
+
+    my @results;
+    if (@ids) {
+        $filter->{'products'}->{'id'} = \@ids;
+        $filter->{'tag.name'} = [-and => map {{'!=' => $_}} @{$tags}];
+        @results = $self->tags($filter, $options)->all;
+    };
 
     if (wantarray) {
         return @results;

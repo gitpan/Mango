@@ -1,9 +1,9 @@
-# $Id: /local/CPAN/Mango/lib/Mango.pm 1187 2008-01-13T03:25:07.767826Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango.pm 1196 2008-01-16T03:57:25.091559Z claco  $
 package Mango;
 use strict;
 use warnings;
 
-our $VERSION = '0.01000_08';
+our $VERSION = '0.01000_09';
 
 BEGIN {
     use base qw/Class::Accessor::Grouped/;

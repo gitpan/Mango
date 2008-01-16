@@ -1,5 +1,9 @@
-# $Id: /local/CPAN/Mango/Changes 1185 2008-01-13T03:21:52.605766Z claco  $
+# $Id: /local/CPAN/Mango/Changes 1196 2008-01-16T03:57:25.091559Z claco  $
 This file documents the revision history for Perl extension Mango.
+
+0.01000_09 Tue Jan 15 22:51:56 2008
+    - Added related_tags to Products Provider
+    - Products controller now works for tag browsing, view, with tests
 
 0.01000_08 Sat Jan 12 22:20:37 2008
     - Added wishlist restore plus tests
