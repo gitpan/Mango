@@ -20,7 +20,7 @@ requires:
   CGI::FormBuilder: 0
   Catalyst::Action::REST: 0.60
   Catalyst::Action::RenderView: 0
-  Catalyst::Component::ACCEPT_CONTEXT: 0.03
+  Catalyst::Component::ACCEPT_CONTEXT: 0.05
   Catalyst::Devel: 1.02
   Catalyst::Plugin::Authentication: 0.09999
   Catalyst::Plugin::Authentication::Credential::HTTP: 0
@@ -51,10 +51,11 @@ requires:
   Path::Class: 0
   Scalar::Util: 0
   Set::Scalar: 0
+  Test::WWW::Mechanize::Catalyst: 0
   XML::Atom: 0.27
   XML::Feed: 0.12
   XML::RSS: 1.31
   YAML: 0
   perl: 5.8.1
 tests: t/*.t t/*/*.t
-version: 0.01000_09
+version: 0.01000_10

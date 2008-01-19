@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/trunk/lib/Mango/Profile.pm 1959 2007-08-10T05:27:29.884596Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Profile.pm 1199 2008-01-17T04:42:21.101109Z claco  $
 package Mango::Profile;
 use strict;
 use warnings;
@@ -7,6 +7,14 @@ BEGIN {
     use base qw/Mango::Object/;
 
     __PACKAGE__->mk_group_accessors('column', qw/user_id first_name last_name/);
+};
+
+sub full_name {
+    my $self = shift;
+
+    return $self->last_name ?
+        $self->first_name . ' ' . $self->last_name :
+        $self->first_name;
 };
 
 1;

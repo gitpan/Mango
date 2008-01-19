@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/trunk/lib/Mango/Catalyst/View/Feed.pm 1959 2007-08-10T05:27:29.884596Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/View/Feed.pm 1199 2008-01-17T04:42:21.101109Z claco  $
 package Mango::Catalyst::View::Feed;
 use strict;
 use warnings;
@@ -7,7 +7,7 @@ BEGIN {
     use base qw/Catalyst::View/;
 
     use Mango::Exception ();
-    use Scalar::Util qw/blessed/;
+    use Scalar::Util ();
     use XML::Feed ();
 };
 
@@ -19,11 +19,11 @@ sub process {
     Mango::Exception->throw('FEED_TYPE_NOT_SPECIFIED') unless $type;
     Mango::Exception->throw('FEED_NOT_FOUND') unless $entity;
 
-    if (blessed $entity && $entity->can('as_feed')) {
+    if (Scalar::Util::blessed $entity && $entity->can('as_feed')) {
         my $feed = $entity->as_feed($type);
 
-        if (blessed $feed) {
-            $c->res->body($feed->as_xml);
+        if (Scalar::Util::blessed $feed) {
+            $c->response->body($feed->as_xml);
             return 1;
         } else {
             $entity = $feed;
@@ -31,7 +31,7 @@ sub process {
     };
 
     if (my $entries = delete $entity->{'entries'}) {
-        if (blessed $entries && $entries->isa('Mango::Iterator')) {
+        if (Scalar::Util::blessed $entries && $entries->isa('Mango::Iterator')) {
             push @entries, $entries->all;
         } else {
             push @entries, @{$entries};
@@ -47,7 +47,7 @@ sub process {
     $feed->language($c->language) unless $feed->language;
 
     for my $entry (@entries) {
-        if (blessed $entry && $entry->can('as_feed_entry')) {
+        if (Scalar::Util::blessed $entry && $entry->can('as_feed_entry')) {
             my $data = $entry->as_feed_entry($type);
 
             if (blessed $data) {

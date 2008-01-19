@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/REST.pm 1146 2008-01-04T03:42:07.915948Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/REST.pm 1202 2008-01-18T23:19:38.754119Z claco  $
 package Mango::Catalyst::Controller::REST;
 use strict;
 use warnings;
@@ -61,6 +61,10 @@ sub ACCEPT_CONTEXT {
     my $self = shift;
     my $c = shift;
 
+    if (! $c->request->header('Accept')) {
+        $c->request->content_type($self->{'default'});
+    };
+
     ## friendly view name overrides header
     my $view = $c->request->param('view');
     if ($view) {
@@ -69,7 +73,7 @@ sub ACCEPT_CONTEXT {
         );
     };
 
-    ## type param overrides headerß
+    ## type param overrides header
     my $type = $c->request->param('content-type');
     if ($type) {
         $c ->request->content_type($type);
@@ -94,7 +98,7 @@ sub end : ActionClass('Serialize') {
 
 sub entity {
     my ($self, $data, $pager) = @_;
-    my $key = $self->{'serialize'}->{'stash_key'};
+    my $key = $self->{'stash_key'};
 
     if (defined $data) {
         if (Scalar::Util::blessed $pager && $pager->isa('Data::Page')) {
