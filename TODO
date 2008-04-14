@@ -1,4 +1,4 @@
-$Id: /local/CPAN/Mango/TODO 1185 2008-01-13T03:21:52.605766Z claco  $
+$Id: /local/CPAN/Mango/TODO 1528 2008-04-14T01:08:40.114508Z claco  $
 - Added method to set config->mango->conrollers-name
 - Added rating/s() and comments() to Object using Ratings/Comments models
 - Cleanup blessed
@@ -14,3 +14,4 @@ $Id: /local/CPAN/Mango/TODO 1185 2008-01-13T03:21:52.605766Z claco  $
 - test non deletes of other peoples wishlists when passing ids that exist for 
 	other users
 - clean up Auth/Store/User stuff, esp $user->refreshß
+- Added OpenID

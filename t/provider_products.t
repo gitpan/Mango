@@ -1,5 +1,5 @@
 #!perl -w
-# $Id: /local/CPAN/Mango/t/provider_products.t 1191 2008-01-14T03:37:39.681041Z claco  $
+# $Id: /local/CPAN/Mango/t/provider_products.t 1528 2008-04-14T01:08:40.114508Z claco  $
 use strict;
 use warnings;
 

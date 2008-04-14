@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/trunk/lib/Mango/Object/Meta.pm 1959 2007-08-10T05:27:29.884596Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Object/Meta.pm 1528 2008-04-14T01:08:40.114508Z claco  $
 package Mango::Object::Meta;
 use strict;
 use warnings;
@@ -6,14 +6,14 @@ use warnings;
 BEGIN {
     use base qw/Class::Accessor::Grouped/;
 
-    __PACKAGE__->mk_group_accessors('simple', qw/provider parent/);
-};
+    __PACKAGE__->mk_group_accessors( 'simple', qw/provider parent/ );
+}
 
 sub new {
-    my ($class, $args) = @_;
+    my ( $class, $args ) = @_;
 
     return bless $args, $class;
-};
+}
 
 1;
 __END__
@@ -29,8 +29,8 @@ Mango::Object::Meta - Module representing object meta information
 
 =head1 DESCRIPTION
 
-Mango::Object::Meta module contains all of the non-column, or "meta" information
-for a result object.
+Mango::Object::Meta module contains all of the non-column, or "meta"
+information for a result object.
 
 =head1 CONSTRUCTOR
 

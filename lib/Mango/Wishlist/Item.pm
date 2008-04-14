@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Wishlist/Item.pm 1154 2008-01-06T06:40:52.146460Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Wishlist/Item.pm 1528 2008-04-14T01:08:40.114508Z claco  $
 package Mango::Wishlist::Item;
 use strict;
 use warnings;
@@ -6,44 +6,47 @@ use warnings;
 BEGIN {
     use base qw/Handel::Cart::Item/;
     use Handel::Constraints ();
-    use DateTime ();
-};
-__PACKAGE__->storage->setup({
-    autoupdate       => 0,
-    currency_class   => 'Mango::Currency',
-    schema_class     => 'Mango::Schema',
-    schema_source    => 'WishlistItems',
-    constraints      => {
-        quantity     => {'Check Quantity' => \&Handel::Constraints::constraint_quantity}
-    },
-    default_values   => {
-        quantity     => 1,
-        created      => sub {DateTime->now},
-        updated      => sub {DateTime->now}
+    use DateTime            ();
+}
+__PACKAGE__->storage->setup(
+    {
+        autoupdate     => 0,
+        currency_class => 'Mango::Currency',
+        schema_class   => 'Mango::Schema',
+        schema_source  => 'WishlistItems',
+        constraints    => {
+            quantity => {
+                'Check Quantity' => \&Handel::Constraints::constraint_quantity
+            }
+        },
+        default_values => {
+            quantity => 1,
+            created  => sub { DateTime->now },
+            updated  => sub { DateTime->now }
+        }
     }
-});
+);
 __PACKAGE__->result_iterator_class('Mango::Iterator');
 __PACKAGE__->create_accessors;
 
 sub price {
-    return Mango::Currency->new(shift->result->get_column('price') || 0);
-};
+    return Mango::Currency->new( shift->result->get_column('price') || 0 );
+}
 
 sub update {
     my $self = shift;
 
-    $self->updated(DateTime->now);
+    $self->updated( DateTime->now );
 
     return $self->SUPER::update(@_);
-};
+}
 
 sub total {
     my $self = shift;
 
     return Mango::Currency->new(
-        ($self->result->get_column('price') || 0)*$self->quantity
-    );
-};
+        ( $self->result->get_column('price') || 0 ) * $self->quantity );
+}
 
 1;
 __END__

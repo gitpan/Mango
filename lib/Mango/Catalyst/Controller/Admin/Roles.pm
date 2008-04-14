@@ -1,33 +1,40 @@
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Admin/Roles.pm 1528 2008-04-14T01:08:40.114508Z claco  $
 package Mango::Catalyst::Controller::Admin::Roles;
 use strict;
 use warnings;
 
 BEGIN {
     use base qw/Mango::Catalyst::Controller/;
-    use Mango ();
+    use Mango       ();
     use Path::Class ();
 
     __PACKAGE__->config(
-        resource_name  => 'mango/admin/roles',
-        form_directory => Path::Class::Dir->new(Mango->share, 'forms', 'admin', 'roles')
+        resource_name => 'mango/admin/roles',
+        form_directory =>
+          Path::Class::Dir->new( Mango->share, 'forms', 'admin', 'roles' )
     );
-};
+}
 
 sub index : Template('admin/roles/index') {
-    my ($self, $c) = @_;
+    my ( $self, $c ) = @_;
     my $page = $c->request->param('page') || 1;
-    my $roles = $c->model('Roles')->search(undef, {
-        page => $page,
-        rows => 10
-    });
+    my $roles = $c->model('Roles')->search(
+        undef,
+        {
+            page => $page,
+            rows => 10
+        }
+    );
 
-    $c->stash->{'roles'} = $roles;
-    $c->stash->{'pager'} = $roles->pager;
+    $c->stash->{'roles'}       = $roles;
+    $c->stash->{'pager'}       = $roles->pager;
     $c->stash->{'delete_form'} = $self->form('delete');
-};
+
+    return;
+}
 
 sub load : Chained('/') PathPrefix CaptureArgs(1) {
-    my ($self, $c, $id) = @_;
+    my ( $self, $c, $id ) = @_;
     my $role = $c->model('Roles')->get_by_id($id);
 
     if ($role) {
@@ -35,139 +42,125 @@ sub load : Chained('/') PathPrefix CaptureArgs(1) {
     } else {
         $c->response->status(404);
         $c->detach;
-    };
-};
+    }
+
+    return;
+}
 
 sub create : Local Template('admin/roles/create') {
-    my ($self, $c) = @_;
+    my ( $self, $c ) = @_;
     my $form = $self->form;
 
-    $form->unique('name', sub {
-        return !$c->model('Roles')->search({
-            name => $form->field('name')
-        })->count;
-    });
+    $form->unique(
+        'name',
+        sub {
+            return !$c->model('Roles')
+              ->search( { name => $form->field('name') } )->count;
+        }
+    );
 
-    if ($self->submitted && $self->validate->success) {
-        my $role = $c->model('Roles')->create({
-            name => $form->field('name'),
-            description => $form->field('description')
-        });
+    if ( $self->submitted && $self->validate->success ) {
+        my $role = $c->model('Roles')->create(
+            {
+                name        => $form->field('name'),
+                description => $form->field('description')
+            }
+        );
 
         $c->response->redirect(
-            $c->uri_for($self->action_for('edit'), [$role->id]) . '/'
-        );
-    };
-};
+            $c->uri_for( $self->action_for('edit'), [ $role->id ] ) . '/' );
+    }
+
+    return;
+}
 
 sub edit : Chained('load') PathPart Args(0) Template('admin/roles/edit') {
-    my ($self, $c) = @_;
+    my ( $self, $c ) = @_;
     my $role = $c->stash->{'role'};
     my $form = $self->form;
 
-    $form->values({
-        id          => $role->id,
-        name        => $role->name,
-        description => $role->description,
-        created     => $role->created . '',
-        updated     => $role->updated . ''
-    });
+    $form->values(
+        {
+            id          => $role->id,
+            name        => $role->name,
+            description => $role->description,
+            created     => $role->created . '',
+            updated     => $role->updated . ''
+        }
+    );
 
-    if ($self->submitted && $self->validate->success) {
-        $role->description($form->field('description'));
+    if ( $self->submitted && $self->validate->success ) {
+        $role->description( $form->field('description') );
         $role->update;
 
-        $form->values({
-            updated     => $role->updated . ''
-        });
-    };
-};
+        $form->values( { updated => $role->updated . '' } );
+    }
+
+    return;
+}
 
 sub delete : Chained('load') PathPart Args(0) Template('admin/roles/delete') {
-    my ($self, $c) = @_;
+    my ( $self, $c ) = @_;
     my $form = $self->form;
     my $role = $c->stash->{'role'};
 
-    if ($self->submitted && $self->validate->success) {
-        if ($form->field('id') == $role->id) {
+    if ( $self->submitted && $self->validate->success ) {
+        if ( $form->field('id') == $role->id ) {
 
             $role->destroy;
 
             $c->response->redirect(
-                $c->uri_for($self->action_for('index')) . '/'
-            );
+                $c->uri_for( $self->action_for('index') ) . '/' );
         } else {
             $c->stash->{'errors'} = ['ID_MISTMATCH'];
-        };
-    };
-};
+        }
+    }
+
+    return;
+}
 
 1;
 __END__
 
 =head1 NAME
 
-Mango::Tag - Module representing a [folksonomy] tag
+Mango::Catalyst::Controller::Admin::Roles - Catalyst controller for role admin
 
 =head1 SYNOPSIS
 
-    my $tags = $product->tags;
-    
-    while (my $tag = %tags->next) {
-        print $tag->name;
-    };
+    package MyApp::Controllers::Admin::Roles;
+    use base qw/Mango::Catalyst::Controllers::Admin::Roles/;
 
 =head1 DESCRIPTION
 
-Mango::Tag represents a tag assigned to products.
+Mango::Catalyst::Controller::Admin::Roles is the controller
+used to edit user roles.
 
-=head1 METHODS
+=head1 ACTIONS
 
-=head2 count
+=head2 index : /admin/roles/
 
-Returns the number of instances this tag.
+Displays the list of roles.
 
-B<This is not currently implemented and always returns 0>.
+=head2 create : /admin/roles/create/
 
-=head2 created
+Creates a new role.
 
-Returns the date and time in UTC the tag was created as a DateTime
-object.
+=head2 delete : /admin/roles/<id>/delete/
 
-    print $user->created;
+Deletes the specified role.
 
-=head2 destroy
+=head2 edit : /admin/roles/<id>/edit/
 
-B<This is not currently implemented>.
+Updates the specified role.
 
-=head2 id
+=head2 load : /admin/role/<id>/
 
-Returns the id of the current tag.
-
-    print $tag->id;
-
-=head2 name
-
-=over
-
-=item Arguments: $name
-
-=back
-
-Gets/sets the name of the current tag.
-
-    print $tag->name;
-
-=head2 updated
-
-Returns the date and time in UTC the tag was last updated as a DateTime
-object.
-
-    print $user->updated;
+Loads a specific role.
 
 =head1 SEE ALSO
 
-L<Mango::Object>, L<Mango::Product>
+L<Mango::Catalyst::Model::Roles>, L<Mango::Provider::Roles>
 
 =head1 AUTHOR
 

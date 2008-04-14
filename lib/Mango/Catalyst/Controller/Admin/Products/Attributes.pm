@@ -1,3 +1,4 @@
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Admin/Products/Attributes.pm 1528 2008-04-14T01:08:40.114508Z claco  $
 package Mango::Catalyst::Controller::Admin::Products::Attributes;
 use strict;
 use warnings;
@@ -5,191 +6,196 @@ use warnings;
 BEGIN {
     use base qw/Mango::Catalyst::Controller/;
     use Set::Scalar ();
-    use Mango ();
+    use Mango       ();
     use Path::Class ();
 
     __PACKAGE__->config(
         resource_name  => 'mango/admin/products/attributes',
-        form_directory => Path::Class::Dir->new(Mango->share, 'forms', 'admin', 'products', 'attributes')
+        form_directory => Path::Class::Dir->new(
+            Mango->share, 'forms', 'admin', 'products', 'attributes'
+        )
     );
-};
+}
 
-sub index : PathPart('attributes') Chained('../load') Args(0) Template('admin/products/attributes/index') {
-    my ($self, $c) = @_;
-    my $product = $c->stash->{'product'};
-    my $page = $c->request->param('page') || 1;
-    my $attributes = $product->attributes(undef, {
-        page => $page,
-        rows => 10
-    });
+sub index : PathPart('attributes') Chained('../load') Args(0)
+  Template('admin/products/attributes/index') {
+    my ( $self, $c ) = @_;
+    my $product    = $c->stash->{'product'};
+    my $page       = $c->request->param('page') || 1;
+    my $attributes = $product->attributes(
+        undef,
+        {
+            page => $page,
+            rows => 10
+        }
+    );
 
-    $c->stash->{'attributes'} = $attributes;
-    $c->stash->{'pager'} = $attributes->pager;
+    $c->stash->{'attributes'}  = $attributes;
+    $c->stash->{'pager'}       = $attributes->pager;
     $c->stash->{'delete_form'} = $self->form('delete');
-};
+
+    return;
+}
 
 sub load : PathPart('attributes') Chained('../load') CaptureArgs(1) {
-    my ($self, $c, $id) = @_;
-    my $attribute = $c->stash->{'product'}->attributes({
-        id => $id
-    })->first;
+    my ( $self, $c, $id ) = @_;
+    my $attribute =
+      $c->stash->{'product'}->attributes( { id => $id } )->first;
 
     if ($attribute) {
         $c->stash->{'attribute'} = $attribute;
     } else {
         $c->response->status(404);
         $c->detach;
-    };
-};
+    }
 
-sub create : PathPart('attributes/create') Chained('../load') Args(0) Template('admin/products/attributes/create') {
-    my ($self, $c) = @_;
+    return;
+}
+
+sub create : PathPart('attributes/create') Chained('../load') Args(0)
+  Template('admin/products/attributes/create') {
+    my ( $self, $c ) = @_;
     my $product = $c->stash->{'product'};
-    my $form = $self->form;
+    my $form    = $self->form;
 
-    $form->unique('name', sub {
-        return !$product->attributes({
-            name => $form->field('name')
-        })->count;
-    });
+    $form->unique(
+        'name',
+        sub {
+            return !$product->attributes( { name => $form->field('name') } )
+              ->count;
+        }
+    );
 
-    if ($self->submitted && $self->validate->success) {
-        my $attribute = $product->add_attribute({
-            name => $form->field('name'),
-            value => $form->field('value')
-        });
+    if ( $self->submitted && $self->validate->success ) {
+        my $attribute = $product->add_attribute(
+            {
+                name  => $form->field('name'),
+                value => $form->field('value')
+            }
+        );
 
         $c->response->redirect(
-            $c->uri_for('/admin/products', $product->id, 'attributes', $attribute->id, 'edit/')
+            $c->uri_for(
+                '/admin/products', $product->id,
+                'attributes',      $attribute->id,
+                'edit/'
+            )
         );
-    };
-};
+    }
 
-sub edit : PathPart('edit') Chained('load') Args(0) Template('admin/products/attributes/edit') {
-    my ($self, $c) = @_;
+    return;
+}
+
+sub edit : PathPart('edit') Chained('load') Args(0)
+  Template('admin/products/attributes/edit') {
+    my ( $self, $c ) = @_;
     my $attribute = $c->stash->{'attribute'};
-    my $form = $self->form;
+    my $form      = $self->form;
 
-    $form->unique('name', sub {
-        if ($attribute->name eq $form->field('name')) {
-            return 1;
-        };
-        my $existing = $c->stash->{'product'}->attributes({
-            name => $form->field('name')
-        })->count;
+    $form->unique(
+        'name',
+        sub {
+            if ( $attribute->name eq $form->field('name') ) {
+                return 1;
+            }
+            my $existing =
+              $c->stash->{'product'}
+              ->attributes( { name => $form->field('name') } )->count;
 
-        if ($existing && $existing->id != $attribute->id) {
-            return;
-        } else {
-            return 1;
-        };
-    });
+            if ( $existing && $existing->id != $attribute->id ) {
+                return;
+            } else {
+                return 1;
+            }
+        }
+    );
 
-    $form->values({
-        id      => $attribute->id,
-        name    => $attribute->name,
-        value   => $attribute->value,
-        created => $attribute->created . '',
-        updated => $attribute->updated . ''
-    });
+    $form->values(
+        {
+            id      => $attribute->id,
+            name    => $attribute->name,
+            value   => $attribute->value,
+            created => $attribute->created . '',
+            updated => $attribute->updated . ''
+        }
+    );
 
-    if ($self->submitted && $self->validate->success) {
-        $attribute->name($form->field('name'));
-        $attribute->value($form->field('value'));
+    if ( $self->submitted && $self->validate->success ) {
+        $attribute->name( $form->field('name') );
+        $attribute->value( $form->field('value') );
         $attribute->update;
-        
-        $form->values({
-            updated     => $attribute->updated . ''
-        });
-    };
-};
 
-sub delete : Chained('load') PathPart Args(0) Template('admin/products/attributes/delete') {
-    my ($self, $c) = @_;
-    my $product = $c->stash->{'product'};
+        $form->values( { updated => $attribute->updated . '' } );
+    }
+
+    return;
+}
+
+sub delete : Chained('load') PathPart Args(0)
+  Template('admin/products/attributes/delete') {
+    my ( $self, $c ) = @_;
+    my $product   = $c->stash->{'product'};
     my $attribute = $c->stash->{'attribute'};
-    my $form = $self->form;
+    my $form      = $self->form;
 
-    if ($self->submitted && $self->validate->success) {
-        if ($form->field('id') == $attribute->id) {
+    if ( $self->submitted && $self->validate->success ) {
+        if ( $form->field('id') == $attribute->id ) {
 
             $attribute->destroy;
 
             $c->response->redirect(
-                $c->uri_for('/admin/products', $product->id, 'attributes/')
+                $c->uri_for( '/admin/products', $product->id, 'attributes/' )
             );
         } else {
             $c->stash->{'errors'} = ['ID_MISTMATCH'];
-        };
-    };
-};
+        }
+    }
+
+    return;
+}
 
 1;
 __END__
 
 =head1 NAME
 
-Mango::Tag - Module representing a [folksonomy] tag
+Mango::Catalyst::Controller::Admin::Products::Attributes - Catalyst controller for product attribute admin
 
 =head1 SYNOPSIS
 
-    my $tags = $product->tags;
-    
-    while (my $tag = %tags->next) {
-        print $tag->name;
-    };
+    package MyApp::Controllers::Admin::Products::Attributes;
+    use base qw/Mango::Catalyst::Controllers::Admin::Products::Attributes/;
 
 =head1 DESCRIPTION
 
-Mango::Tag represents a tag assigned to products.
+Mango::Catalyst::Controller::Admin::Products::Attributes is the controller
+used to edit a specific products attributes.
 
-=head1 METHODS
+=head1 ACTIONS
 
-=head2 count
+=head2 index : products/<id>/attributes
 
-Returns the number of instances this tag.
+Displays the list of attributes for a specific product.
 
-B<This is not currently implemented and always returns 0>.
+=head2 create : products/<id>/attributes/create
 
-=head2 created
+Adds an attribute to the given product.
 
-Returns the date and time in UTC the tag was created as a DateTime
-object.
+=head2 delete : products/<id>/attributes/<id>/delete
 
-    print $user->created;
+Deletes the specified attribute form the current product.
 
-=head2 destroy
+=head2 edit : products/<id>/attributes/<id>/edit
 
-B<This is not currently implemented>.
+Updates the specified attribute.
 
-=head2 id
+=head2 load : products/<id>/attributes/<id>
 
-Returns the id of the current tag.
-
-    print $tag->id;
-
-=head2 name
-
-=over
-
-=item Arguments: $name
-
-=back
-
-Gets/sets the name of the current tag.
-
-    print $tag->name;
-
-=head2 updated
-
-Returns the date and time in UTC the tag was last updated as a DateTime
-object.
-
-    print $user->updated;
+Loads a specific products attribute.
 
 =head1 SEE ALSO
 
-L<Mango::Object>, L<Mango::Product>
+L<Mango::Catalyst::Controller::Admin::Products>
 
 =head1 AUTHOR
 

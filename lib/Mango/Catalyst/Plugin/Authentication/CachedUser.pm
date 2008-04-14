@@ -1,28 +1,28 @@
-# $Id: /local/CPAN/Mango/trunk/lib/Mango/Catalyst/Plugin/Authentication/CachedUser.pm 1959 2007-08-10T05:27:29.884596Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Plugin/Authentication/CachedUser.pm 1528 2008-04-14T01:08:40.114508Z claco  $
 package Mango::Catalyst::Plugin::Authentication::CachedUser;
 use strict;
 use warnings;
 
 BEGIN {
     use base qw/Mango::Catalyst::Plugin::Authentication::User/;
-};
+}
 __PACKAGE__->mk_accessors(qw/password _roles/);
 
 sub roles {
     my $self = shift;
 
-    return @{$self->_roles || []};
-};
+    return @{ $self->_roles || [] };
+}
 
 sub supported_features {
     my $self = shift;
 
     return {
-        roles => 1,
+        roles    => 1,
         profiles => 1,
-        carts => 1
+        carts    => 1
     };
-};
+}
 
 1;
 __END__

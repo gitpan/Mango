@@ -1,5 +1,5 @@
 #!perl -w
-# $Id: /local/CPAN/Mango/t/pod_coverage.t 1187 2008-01-13T03:25:07.767826Z claco  $
+# $Id: /local/CPAN/Mango/t/pod_coverage.t 1528 2008-04-14T01:08:40.114508Z claco  $
 use strict;
 use warnings;
 
@@ -18,7 +18,7 @@ BEGIN {
 
 my $trustme = {
     trustme =>
-    [qr/^(COMPONENT|destroy|setup|create_result|type|save|begin)$/]
+    [qr/^(ACCEPT_CONTEXT|COMPONENT|destroy|setup|create_result|type|save|begin|end|auto)$/]
 };
 
 all_pod_coverage_ok($trustme);

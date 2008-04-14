@@ -1,15 +1,13 @@
-# $Id: /local/CPAN/Mango/trunk/lib/Mango/Catalyst/Model/Users.pm 1959 2007-08-10T05:27:29.884596Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Model/Users.pm 1528 2008-04-14T01:08:40.114508Z claco  $
 package Mango::Catalyst::Model::Users;
 use strict;
 use warnings;
 
 BEGIN {
     use base qw/Mango::Catalyst::Model::Provider/;
-};
+}
 
-__PACKAGE__->config(
-    provider_class => 'Mango::Provider::Users'
-);
+__PACKAGE__->config( provider_class => 'Mango::Provider::Users' );
 
 1;
 __END__
@@ -17,6 +15,11 @@ __END__
 =head1 NAME
 
 Mango::Catalyst::Model::Users - Catalyst model for user information
+
+=head1 SYNOPSIS
+
+    package MyApp::Model::Users;
+    use base 'Mango::Catalyst::Model::Users';
 
 =head1 DESCRIPTION
 

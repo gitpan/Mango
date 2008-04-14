@@ -1,11 +1,11 @@
-# $Id: /local/CPAN/Mango/trunk/lib/Mango/Currency.pm 1959 2007-08-10T05:27:29.884596Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Currency.pm 1528 2008-04-14T01:08:40.114508Z claco  $
 package Mango::Currency;
 use strict;
 use warnings;
 
 BEGIN {
     use base qw/Handel::Currency/;
-};
+}
 
 1;
 __END__

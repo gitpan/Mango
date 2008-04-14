@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/trunk/t/lib/Mango/Test/I18N.pm 1959 2007-08-10T05:27:29.884596Z claco  $
+# $Id: /local/CPAN/Mango/t/lib/Mango/Test/I18N.pm 1528 2008-04-14T01:08:40.114508Z claco  $
 package Mango::Test::I18N;
 use strict;
 use warnings;

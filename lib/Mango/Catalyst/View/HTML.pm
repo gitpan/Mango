@@ -1,18 +1,18 @@
-# $Id: /local/CPAN/Mango/trunk/lib/Mango/Catalyst/View/HTML.pm 1959 2007-08-10T05:27:29.884596Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/View/HTML.pm 1528 2008-04-14T01:08:40.114508Z claco  $
 package Mango::Catalyst::View::HTML;
 use strict;
 use warnings;
 
 BEGIN {
     use base qw/Mango::Catalyst::View::Template/;
-    use Path::Class ()
-};
-__PACKAGE__->share_paths([
-    Path::Class::Dir->new(qw/templates %view html/)
-]);
-__PACKAGE__->root_paths([
-    Path::Class::Dir->new(qw/templates %view html/)
-]);
+    use Path::Class ();
+}
+__PACKAGE__->share_paths(
+    [ Path::Class::Dir->new(qw/templates %view html/) ] );
+
+__PACKAGE__->root_paths(
+    [ Path::Class::Dir->new(qw/templates %view html/) ] );
+
 __PACKAGE__->content_type('text/html; charset=utf-8');
 
 1;
@@ -57,8 +57,8 @@ Now, the template search path will be:
     root/templates/tt/html
     /usr/local/share/Mango/templates/tt/html
 
-See L<Mango::Catalyst::View::Template|Mango::Catalyst::View::Template> for more
-information on changing the location of templates.
+See L<Mango::Catalyst::View::Template|Mango::Catalyst::View::Template> for
+more information on changing the location of templates.
 
 =head1 METHODS
 

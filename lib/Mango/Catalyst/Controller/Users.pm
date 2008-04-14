@@ -1,76 +1,86 @@
-# $Id$
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Users.pm 1528 2008-04-14T01:08:40.114508Z claco  $
 package Mango::Catalyst::Controller::Users;
 use strict;
 use warnings;
 
 BEGIN {
     use base qw/Mango::Catalyst::Controller/;
-    use Mango ();
+    use Mango       ();
     use Path::Class ();
-    
+
     __PACKAGE__->config(
-        resource_name  => 'mango/users',
-        form_directory => Path::Class::Dir->new(Mango->share, 'forms', 'users')
+        resource_name => 'mango/users',
+        form_directory =>
+          Path::Class::Dir->new( Mango->share, 'forms', 'users' )
     );
-};
+}
 
 sub instance : Chained('/') PathPrefix CaptureArgs(1) {
-    my ($self, $c, $username) = @_;
-    my $user = $c->model('Users')->search({
-        username => $username
-    })->first;
+    my ( $self, $c, $username ) = @_;
+    my $user = $c->model('Users')->search( { username => $username } )->first;
 
-    if (defined $user) {
+    if ( defined $user ) {
         $c->stash->{'user'} = $user;
 
-        my $profile = $c->model('Profiles')->search({
-            user => $user
-        })->first;
+        my $profile =
+          $c->model('Profiles')->search( { user => $user } )->first;
 
         $c->stash->{'profile'} = $profile;
     } else {
         $c->response->status(404);
         $c->detach;
-    };
-};
+    }
+
+    return;
+}
 
 sub view : Chained('instance') PathPart('') Args(0) Template('users/view') {
-    my ($self, $c) = @_;
+    my ( $self, $c ) = @_;
 
-};
+    return;
+}
 
 sub create : Local Template('users/create') {
-    my ($self, $c) = @_;
+    my ( $self, $c ) = @_;
     my $form = $self->form;
 
-    $form->unique('username', sub {
-        return !$c->model('Users')->search({
-            username => $form->field('username')
-        })->count;
-    });
+    $form->unique(
+        'username',
+        sub {
+            return !$c->model('Users')
+              ->search( { username => $form->field('username') } )->count;
+        }
+    );
 
-    if ($self->submitted && $self->validate->success) {
-        my $user = $c->model('Users')->create({
-            username => $form->field('username'),
-            password => $form->field('password')
-        });
+    if ( $self->submitted && $self->validate->success ) {
+        my $user = $c->model('Users')->create(
+            {
+                username => $form->field('username'),
+                password => $form->field('password')
+            }
+        );
 
-        my $profile = $c->model('Profiles')->create({
-            user_id => $user->id,
-            first_name => $form->field('first_name'),
-            last_name  => $form->field('last_name')
-        });
+        my $profile = $c->model('Profiles')->create(
+            {
+                user_id    => $user->id,
+                first_name => $form->field('first_name'),
+                last_name  => $form->field('last_name')
+            }
+        );
 
-        $c->authenticate({
-            username => $user->username,
-            password => $user->password
-        });
+        $c->authenticate(
+            {
+                username => $user->username,
+                password => $user->password
+            }
+        );
 
         $c->response->redirect(
-            $c->uri_for_resource('mango/settings', 'profile') . '/'
-        );
-    };
-};
+            $c->uri_for_resource( 'mango/settings', 'profile' ) . '/' );
+    }
+
+    return;
+}
 
 1;
 __END__
@@ -79,6 +89,11 @@ __END__
 
 Mango::Catalyst::Controller::Users - Catalyst controller for displaying users
 
+=head1 SYNOPSIS
+
+    package MyApp::Controller::Users;
+    use base 'Mango::Catalyst::Controller::Users';
+
 =head1 DESCRIPTION
 
 Mango::Catalyst::Controller::Users provides the web interface for
@@ -86,17 +101,17 @@ display users and their information.
 
 =head1 ACTIONS
 
-=head2 default : /
+=head2 create : /users/create/
 
-Displays the not found page for non exisistant urls.
+Creates, or 'signs up' a new user.
 
-=head2 end
+=head2 instance : /users/<username>/
 
-Sends the request to the RenderView action.
+Loads the specified user.
 
-=head2 index : /
+=head2 view : /users/<username>/
 
-Displays the current homepage.
+Displays information for the specified user.
 
 =head1 AUTHOR
 

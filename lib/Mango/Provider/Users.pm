@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/trunk/lib/Mango/Provider/Users.pm 1959 2007-08-10T05:27:29.884596Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Provider/Users.pm 1528 2008-04-14T01:08:40.114508Z claco  $
 package Mango::Provider::Users;
 use strict;
 use warnings;
@@ -6,7 +6,7 @@ use warnings;
 BEGIN {
     use base qw/Mango::Provider::DBIC/;
     use Scalar::Util ();
-};
+}
 __PACKAGE__->result_class('Mango::User');
 __PACKAGE__->source_name('Users');
 
@@ -42,8 +42,8 @@ sent to C<setup>.
 
     my $provider = Mango::Provider::Users->new;
 
-See L<Mango::Provider/new> and L<Mango::Provider::DBIC/new> for a list of other
-possible options.
+See L<Mango::Provider/new> and L<Mango::Provider::DBIC/new> for a list of
+other possible options.
 
 =head1 METHODS
 

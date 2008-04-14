@@ -1,20 +1,20 @@
-# $Id: /local/CPAN/Mango/trunk/lib/Mango/Catalyst/View/Atom.pm 1959 2007-08-10T05:27:29.884596Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/View/Atom.pm 1528 2008-04-14T01:08:40.114508Z claco  $
 package Mango::Catalyst::View::Atom;
 use strict;
 use warnings;
 
 BEGIN {
     use base qw/Mango::Catalyst::View::Feed/;
-};
+}
 
 sub process {
-    my($self, $c) = @_;
+    my ( $self, $c ) = @_;
 
-    $self->NEXT::process($c, 'Atom');
+    $self->NEXT::process( $c, 'Atom' );
     $c->response->content_type('application/atom+xml; charset=utf-8');
 
     return 1;
-};
+}
 
 1;
 __END__

@@ -1,5 +1,5 @@
-## no critic
-# $Id: /local/CPAN/Mango/trunk/lib/Mango/I18N/ru.pm 1959 2007-08-10T05:27:29.884596Z claco  $
+## no critic (ProhibitPackageVars)
+# $Id: /local/CPAN/Mango/lib/Mango/I18N/ru.pm 1528 2008-04-14T01:08:40.114508Z claco  $
 package Mango::I18N::ru;
 use strict;
 use warnings;
@@ -8,11 +8,9 @@ use vars qw/%Lexicon/;
 
 BEGIN {
     use base qw/Mango::I18N/;
-};
+}
 
-%Lexicon = (
-    Language => 'русском',
-);
+%Lexicon = ( Language => 'русском' );
 
 1;
 __END__

@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/Makefile.PL 1203 2008-01-19T03:30:17.099341Z claco  $
+# $Id: /local/CPAN/Mango/Makefile.PL 1528 2008-04-14T01:08:40.114508Z claco  $
 use strict;
 use warnings;
 use inc::Module::Install 0.65;
@@ -37,6 +37,7 @@ requires 'Handel' => '1.00009';
 requires 'HTML::TagCloud::Sortable';
 requires 'I18N::LangTags';
 requires 'I18N::LangTags::Detect';
+requires 'List::MoreUtils';
 requires 'Locale::Maketext';
 requires 'MIME::Types';
 requires 'Module::Starter' => '1.42';

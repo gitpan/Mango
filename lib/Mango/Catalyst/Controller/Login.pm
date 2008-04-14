@@ -1,37 +1,46 @@
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Login.pm 1528 2008-04-14T01:08:40.114508Z claco  $
 package Mango::Catalyst::Controller::Login;
 use strict;
 use warnings;
 
 BEGIN {
     use base qw/Mango::Catalyst::Controller/;
-    use Mango ();
+    use Mango       ();
     use Path::Class ();
 
     __PACKAGE__->config(
-        resource_name  => 'mango/login',
-        form_directory => Path::Class::Dir->new(Mango->share, 'forms', 'login')
+        resource_name => 'mango/login',
+        form_directory =>
+          Path::Class::Dir->new( Mango->share, 'forms', 'login' )
     );
-};
+}
 
 sub index : Form('login') Template('login/index') {
-    my ($self, $c) = @_;
+    my ( $self, $c ) = @_;
     my $form = $self->form;
 
-    if ($c->user_exists) {
-        $c->stash->{'errors'} = [$c->localize('ALREADY_LOGGED_IN')];
+    if ( $c->user_exists ) {
+        $c->stash->{'errors'} = [ $c->localize('ALREADY_LOGGED_IN') ];
     } else {
-        if ($self->submitted && $self->validate->success) {
-            if ($c->authenticate({
-                username => $c->request->param('username'), 
-                password => $c->request->param('password')
-            })) {
-                $c->stash->{'errors'} = [$c->localize('LOGIN_SUCCEEDED')];
+        if ( $self->submitted && $self->validate->success ) {
+            if (
+                $c->authenticate(
+                    {
+                        username => $c->request->param('username'),
+                        password => $c->request->param('password')
+                    }
+                )
+              )
+            {
+                $c->stash->{'errors'} = [ $c->localize('LOGIN_SUCCEEDED') ];
             } else {
-                $c->stash->{'errors'} = [$c->localize('LOGIN_FAILED')];
-            };
-        };
-    };
-};
+                $c->stash->{'errors'} = [ $c->localize('LOGIN_FAILED') ];
+            }
+        }
+    }
+
+    return;
+}
 
 1;
 __END__
@@ -39,6 +48,11 @@ __END__
 =head1 NAME
 
 Mango::Catalyst::Controller::Login - Catalyst controller for logins
+
+=head1 SYNOPSIS
+
+    package MyApp::Controller::Login;
+    use base 'Mango::Catalyst::Controller::Login';
 
 =head1 DESCRIPTION
 

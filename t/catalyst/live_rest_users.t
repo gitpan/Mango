@@ -1,5 +1,5 @@
 #!perl -w
-# $Id$
+# $Id: /local/CPAN/Mango/t/catalyst/live_rest_users.t 1528 2008-04-14T01:08:40.114508Z claco  $
 use strict;
 use warnings;
 

@@ -1,22 +1,23 @@
---- 
-abstract: An ecommerce solution using Catalyst, Handel and DBIx::Class
-author: 
-  - Christopher H. Laco
-build_requires: 
+---
+abstract: 'An ecommerce solution using Catalyst, Handel and DBIx::Class'
+author:
+  - 'Christopher H. Laco'
+build_requires:
   Directory::Scratch: 0
   ExtUtils::MakeMaker: 6.11
 distribution_type: module
-generated_by: Module::Install version 0.68
+generated_by: 'Module::Install version 0.71'
 license: perl
-meta-spec: 
+meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.3.html
   version: 1.3
 name: Mango
-no_index: 
-  directory: 
+no_index:
+  directory:
+    - share
     - inc
     - t
-requires: 
+requires:
   CGI::FormBuilder: 0
   Catalyst::Action::REST: 0.60
   Catalyst::Action::RenderView: 0
@@ -45,6 +46,7 @@ requires:
   Handel: 1.00009
   I18N::LangTags: 0
   I18N::LangTags::Detect: 0
+  List::MoreUtils: 0
   Locale::Maketext: 0
   MIME::Types: 0
   Module::Starter: 1.42
@@ -57,5 +59,5 @@ requires:
   XML::RSS: 1.31
   YAML: 0
   perl: 5.8.1
-tests: t/*.t t/*/*.t
-version: 0.01000_10
+tests: 't/*.t t/*/*.t'
+version: 0.01000_11

@@ -1,11 +1,11 @@
-# $Id: /local/CPAN/Mango/trunk/lib/Mango/Schema/ProductTag.pm 1959 2007-08-10T05:27:29.884596Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Schema/ProductTag.pm 1528 2008-04-14T01:08:40.114508Z claco  $
 package Mango::Schema::ProductTag;
 use strict;
 use warnings;
 
 BEGIN {
     use base qw/DBIx::Class/;
-};
+}
 
 __PACKAGE__->load_components(qw/Core/);
 __PACKAGE__->table('product_tag');
@@ -15,23 +15,23 @@ __PACKAGE__->add_columns(
         data_type      => 'INT',
         is_nullable    => 0,
         is_foreign_key => 1,
-        extras         => {unsigned => 1}
+        extras         => { unsigned => 1 }
     },
     tag_id => {
         data_type      => 'INT',
         is_nullable    => 0,
         is_foreign_key => 1,
-        extras         => {unsigned => 1}
+        extras         => { unsigned => 1 }
     },
 );
 __PACKAGE__->set_primary_key(qw/product_id tag_id/);
 __PACKAGE__->belongs_to(
     product => 'Mango::Schema::Product',
-    {'foreign.id' => 'self.product_id'}
+    { 'foreign.id' => 'self.product_id' }
 );
 __PACKAGE__->belongs_to(
     tag => 'Mango::Schema::Tag',
-    {'foreign.id' => 'self.tag_id'}
+    { 'foreign.id' => 'self.tag_id' }
 );
 
 1;

@@ -1,3 +1,4 @@
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Root.pm 1528 2008-04-14T01:08:40.114508Z claco  $
 package Mango::Catalyst::Controller::Root;
 use strict;
 use warnings;
@@ -6,23 +7,27 @@ BEGIN {
     use base qw/Catalyst::Controller/;
 
     __PACKAGE__->config->{'namespace'} = '';
-};
+}
 
 sub index : Template('index') {
-    my ($self, $c) = @_;
+    my ( $self, $c ) = @_;
 
-};
+    return;
+}
 
 sub default : Template('errors/404') {
-    my ($self, $c) = @_;
+    my ( $self, $c ) = @_;
 
     $c->response->status(404);
-};
+
+    return;
+}
 
 sub end : ActionClass('RenderView') {
-    my ($self, $c) = @_;
+    my ( $self, $c ) = @_;
 
-};
+    return;
+}
 
 1;
 __END__
@@ -30,6 +35,11 @@ __END__
 =head1 NAME
 
 Mango::Catalyst::Controller::Root - Catalyst controller for the homepage
+
+=head1 SYNOPSIS
+
+    package MyApp::Controller::Root;
+    use base 'Mango::Catalyst::Controller::Root';
 
 =head1 DESCRIPTION
 
@@ -40,7 +50,7 @@ the homepage.
 
 =head2 default : /
 
-Displays the not found page for non exisistant urls.
+Displays the not found page for non-exisistent urls.
 
 =head2 end
 

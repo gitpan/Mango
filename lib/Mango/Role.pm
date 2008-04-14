@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/trunk/lib/Mango/Role.pm 1959 2007-08-10T05:27:29.884596Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Role.pm 1528 2008-04-14T01:08:40.114508Z claco  $
 package Mango::Role;
 use strict;
 use warnings;
@@ -6,15 +6,15 @@ use warnings;
 BEGIN {
     use base qw/Mango::Object/;
 
-    __PACKAGE__->mk_group_accessors('column', qw/name description/);
-};
+    __PACKAGE__->mk_group_accessors( 'column', qw/name description/ );
+}
 
 *add_user = \&add_users;
 
 sub add_users {
     my $self = shift;
 
-    return $self->meta->provider->add_users($self, @_);
+    return $self->meta->provider->add_users( $self, @_ );
 }
 
 *remove_user = \&remove_users;
@@ -22,8 +22,8 @@ sub add_users {
 sub remove_users {
     my $self = shift;
 
-    return $self->meta->provider->remove_users($self, @_);
-};
+    return $self->meta->provider->remove_users( $self, @_ );
+}
 
 1;
 __END__

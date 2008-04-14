@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/trunk/lib/Mango/Catalyst/Plugin/Authentication.pm 2067 2007-12-27T00:50:16.774042Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Plugin/Authentication.pm 1528 2008-04-14T01:08:40.114508Z claco  $
 package Mango::Catalyst::Plugin::Authentication;
 use strict;
 use warnings;
@@ -6,65 +6,68 @@ our $VERSION = $Mango::VERSION;
 
 BEGIN {
     use base qw/
-        Catalyst::Plugin::Authentication
-        Catalyst::Plugin::Authentication::Credential::HTTP
-        Catalyst::Plugin::Authorization::Roles
-    /;
+      Catalyst::Plugin::Authentication
+      Catalyst::Plugin::Authentication::Credential::HTTP
+      Catalyst::Plugin::Authorization::Roles
+      /;
 
-    use Mango ();
+    use Mango       ();
     use Mango::I18N ();
-};
+}
 
 sub authenticate {
-    my ($c, $userinfo, $realmname) = @_;
-    my ($husername, $hpassword) = $c->request->headers->authorization_basic;
+    my ( $c, $userinfo, $realmname ) = @_;
+    my ( $husername, $hpassword ) = $c->request->headers->authorization_basic;
 
     $userinfo ||= {};
 
-    if (! $userinfo->{'username'}) {
+    if ( !$userinfo->{'username'} ) {
         $userinfo->{'username'} ||= $husername;
         $userinfo->{'password'} ||= $hpassword;
-        $userinfo->{'disable_sessions'} = 1
-    };
+        $userinfo->{'disable_sessions'} = 1;
+    }
 
-    return $c->NEXT::authenticate($userinfo, $realmname);
-};
+    return $c->NEXT::authenticate( $userinfo, $realmname );
+}
 
 sub user {
-    my $c = shift;
+    my $c       = shift;
     my $default = $c->config->{'authentication'}{'default_realm'};
-    my $realm = $c->get_auth_realm('mango');
+    my $realm   = $c->get_auth_realm('mango');
 
-    if (my $user = $c->NEXT::user(@_)) {
+    if ( my $user = $c->NEXT::user(@_) ) {
         return $user;
     } else {
-        if (!$realm) {
-            $c->log->warn(Mango::I18N::translate('REALM_NOT_FOUND'));
-        } elsif ($default ne 'mango') {
-            $c->log->warn(Mango::I18N::translate('REALM_NOT_MANGO'));
+        if ( !$realm ) {
+            $c->log->warn( Mango::I18N::translate('REALM_NOT_FOUND') );
+        } elsif ( $default ne 'mango' ) {
+            $c->log->warn( Mango::I18N::translate('REALM_NOT_MANGO') );
         } else {
             return $realm->{'store'}->anonymous_user($c);
-        };
-    };
+        }
+    }
 
     return;
-};
+}
 
 sub is_admin {
     my $c = shift;
     my $role = $c->config->{'mango'}->{'admin_role'} || 'admin';
 
     return $c->check_user_roles($role);
-};
+}
 
 sub unauthorized {
     my $c = shift;
 
     $c->response->status(401);
     $c->stash->{'template'} = 'errors/401';
-    $c->authorization_required(realm => $c->config->{'authentication'}->{'default_realm'});
+    $c->authorization_required(
+        realm => $c->config->{'authentication'}->{'default_realm'} );
     $c->detach;
-};
+
+    return;
+}
 
 1;
 __END__
@@ -78,7 +81,7 @@ Mango::Catalyst::Plugin::Authentication - Custom Catalyst Authentication Plugin
     use Catalyst qw/
         -Debug
         ConfigLoader
-        +Mango::Catalyst::Plugin::Authentication
+        +Mango::Catalyst::Plugin::Application
         Static::Simple
     /;
 
@@ -100,6 +103,8 @@ anonymous user information in the same way:
 
 When authenticating users, the C<mango> realm will be used, which in turn uses
 Mango::Catalyst::Plugin::Authentication::Store to authenticate users.
+
+This plugin also supports HTTP Authentication using Basic and Digest.
 
 =head1 CONFIGURATION
 
@@ -123,14 +128,46 @@ Mango::Catalyst::Plugin::Authentication:
 
 If the C<default_realm> is not C<mango> or no realm named C<mango> is
 configured, all calls to L</user> simply return what the normal authentication
-process would return. For now, this means that any piece of code relying on the
-Mango specific helpers (c->user->cart, etc) will crash and burn. This may be
-fixed in later release with some elfin magic.
+process would return. For now, this means that any piece of code relying on
+the Mango specific helpers (c->user->cart, etc) will crash and burn. This may
+be fixed in later release with some elfin magic.
 
 See L<Mango::Catalyst::Plugin::Authentication::Store> for further information
 about what the available configuration options mean.
 
 =head1 METHODS
+
+=head2 authenticate
+
+=over
+
+=item Arguments: \%info (optional)
+
+=back
+
+Authenticates the user using the specified username/password:
+
+    if ($c->authenticate({
+        username => $username,
+        password => $password
+    })) {
+        ...
+    };
+
+If not information is supplied, HTTP Authentication will be tried instead:
+
+    if ($c->authenticate) {
+        ...
+    };
+
+=head2 is_admin
+
+Returns true if the current user is authenticate and is the admin role.
+This should probably be moved into the custom user subclass.
+
+=head2 unauthorized
+
+Sets the template and http status to 401 Unauthorized.
 
 =head2 user
 

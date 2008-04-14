@@ -1,4 +1,4 @@
-# $Id$
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Plugin/Application.pm 1528 2008-04-14T01:08:40.114508Z claco  $
 package Mango::Catalyst::Plugin::Application;
 use strict;
 use warnings;
@@ -6,35 +6,92 @@ our $VERSION = $Mango::VERSION;
 
 BEGIN {
     use base qw/
-        Mango::Catalyst::Plugin::Authentication
-        Mango::Catalyst::Plugin::I18N
-        Mango::Catalyst::Plugin::Forms
-    /;
-};
+      Mango::Catalyst::Plugin::Authentication
+      Mango::Catalyst::Plugin::I18N
+      Mango::Catalyst::Plugin::Forms
+      /;
+}
 
 sub register_resource {
-    my ($self, $name, $class) = @_;
+    my ( $self, $name, $class ) = @_;
     $class = ref $class || $class;
 
     $self->config->{'mango'}->{'controllers'}->{$name} = $class;
 
-    if ($self->debug) {
+    if ( $self->debug ) {
         $self->log->debug("Registering resource $class as $name");
-    };
+    }
 
     return;
-};
+}
 
 sub uri_for_resource {
-    my ($self, $name, $action, @args) = @_;
+    my ( $self, $name, $action, @args ) = @_;
     my $class = $self->config->{'mango'}->{'controllers'}->{$name};
 
-    return unless $class;
+    if ( !$class ) {
+        return;
+    }
 
-    my $controller = $self->controller($class . '$');
-    $action = $controller->action_for($action || 'index');
+    my $controller = $self->controller( $class . '$' );
+    $action = $controller->action_for( $action || 'index' );
 
-    return $self->uri_for($action, @args);
-};
+    return $self->uri_for( $action, @args );
+}
 
 1;
+__END__
+
+=head1 NAME
+
+Mango::Catalyst::Plugin::Application - Catalyst plugin loading all Mango specific plugins
+
+=head1 SYNOPSIS
+
+    use Catalyst qw/
+        -Debug
+        ConfigLoader
+        Mango::Catalyst::Plugin::Application
+        Static::Simple
+    /;
+
+=head1 DESCRIPTION
+
+Mango::Catalyst::Plugin::Application loads all Mango related plugins into a
+Catalyst application.
+
+=head1 METHODS
+
+=head2 register_resource
+
+=over
+
+=item Arguments: $name, $class
+
+=back
+
+Associates the specified class with the given name so controllers can be
+referred to by a nickname with Mango code when the class name is unknown or
+may change in subclasses.
+
+=head2 uri_for_resource
+
+=over
+
+=item Arguments: $name, $action, @args
+
+=back
+
+Looks up the class name for the specified resource and returns a uri for the
+given action using C<uri_for>.
+
+=head1 SEE ALSO
+
+L<Mango::Catalyst::Plugin::Authentication>, L<Mango::Catalyst::Plugin::I18N>
+
+=head1 AUTHOR
+
+    Christopher H. Laco
+    CPAN ID: CLACO
+    claco@chrislaco.com
+    http://today.icantfocus.com/blog/

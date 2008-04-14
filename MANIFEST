@@ -4,7 +4,6 @@ inc/Module/AutoInstall.pm
 inc/Module/Install.pm
 inc/Module/Install/AutoInstall.pm
 inc/Module/Install/Base.pm
-inc/Module/Install/Build.pm
 inc/Module/Install/Can.pm
 inc/Module/Install/Catalyst.pm
 inc/Module/Install/Fetch.pm
@@ -28,6 +27,7 @@ lib/Mango/Catalyst/Controller/Admin/Roles.pm
 lib/Mango/Catalyst/Controller/Admin/Users.pm
 lib/Mango/Catalyst/Controller/Cart.pm
 lib/Mango/Catalyst/Controller/Cart/Items.pm
+lib/Mango/Catalyst/Controller/Checkout.pm
 lib/Mango/Catalyst/Controller/Form.pm
 lib/Mango/Catalyst/Controller/Login.pm
 lib/Mango/Catalyst/Controller/Logout.pm
@@ -62,6 +62,7 @@ lib/Mango/Catalyst/View/RSS.pm
 lib/Mango/Catalyst/View/Template.pm
 lib/Mango/Catalyst/View/Text.pm
 lib/Mango/Catalyst/View/XHTML.pm
+lib/Mango/Checkout.pm
 lib/Mango/Currency.pm
 lib/Mango/Exception.pm
 lib/Mango/Form.pm
@@ -207,6 +208,8 @@ t/catalyst/view_html.t
 t/catalyst/view_rss.t
 t/catalyst/view_text.t
 t/catalyst/view_xhtml.t
+t/critic.rc
+t/critic.t
 t/exceptions.t
 t/form.t
 t/iterator.t
@@ -227,6 +230,7 @@ t/lib/Mango/Test/Meta.pm
 t/lib/Mango/Test/Schema.pm
 t/meta.t
 t/object.t
+t/perltidy.rc
 t/pod_coverage.t
 t/pod_spelling.t
 t/pod_syntax.t

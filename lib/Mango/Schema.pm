@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/trunk/lib/Mango/Schema.pm 1959 2007-08-10T05:27:29.884596Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Schema.pm 1528 2008-04-14T01:08:40.114508Z claco  $
 package Mango::Schema;
 use strict;
 use warnings;
@@ -7,17 +7,15 @@ BEGIN {
     use base qw/DBIx::Class::Schema/;
 
     use Mango::Exception ();
-};
+}
 __PACKAGE__->load_classes;
 
 sub connect {
-    my ($class, $dsn, $user, $password, $attr) = @_;
+    my ( $class, $dsn, $user, $password, $attr ) = @_;
 
-    $attr ||= {
-        AutoCommit => 1
-    };
+    $attr ||= { AutoCommit => 1 };
 
-    my $schema = $class->next::method($dsn, $user, $password, $attr);
+    my $schema = $class->next::method( $dsn, $user, $password, $attr );
 
     $schema->exception_action(
         sub {
@@ -26,7 +24,7 @@ sub connect {
     );
 
     return $schema;
-};
+}
 
 1;
 __END__
