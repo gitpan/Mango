@@ -1,12 +1,12 @@
 #!perl -w
-# $Id: /local/CPAN/Mango/t/catalyst/controller_form.t 1528 2008-04-14T01:08:40.114508Z claco  $
+# $Id: /local/CPAN/Mango/t/catalyst/controller_form.t 1578 2008-05-10T01:30:21.225794Z claco  $
 use strict;
 use warnings;
 
 BEGIN {
     use lib 't/lib';
-    use Mango::Test tests => 44;
-    use Mango::Test::Catalyst;
+    use Test::More tests => 44;
+    use Mango::Test::Catalyst ();
     use File::Spec::Functions qw/catdir catfile/;
     use File::Path qw/mkpath rmtree/;
     use File::Copy qw/copy/;

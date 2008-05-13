@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/Makefile.PL 1528 2008-04-14T01:08:40.114508Z claco  $
+# $Id: /local/CPAN/Mango/Makefile.PL 1584 2008-05-13T01:34:22.553769Z claco  $
 use strict;
 use warnings;
 use inc::Module::Install 0.65;
@@ -44,15 +44,19 @@ requires 'Module::Starter' => '1.42';
 requires 'Path::Class';
 requires 'Scalar::Util';
 requires 'Set::Scalar';
+requires 'SQL::Translator' => '0.08';
 requires 'Test::WWW::Mechanize::Catalyst';
 requires 'XML::Atom' => '0.27';
 requires 'XML::Feed' => '0.12';
 requires 'XML::RSS' => '1.31';
 requires 'YAML';
 
-catalyst;
-
 build_requires 'Directory::Scratch';
+
+test_requires 'Test::Class';
+test_requires 'Test::More';
+
+catalyst;
 
 tests('t/*.t t/*/*.t');
 clean_files('t/var');

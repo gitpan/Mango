@@ -1,5 +1,5 @@
 ## no critic (ProhibitPackageVars)
-# $Id: /local/CPAN/Mango/lib/Mango/I18N/en.pm 1528 2008-04-14T01:08:40.114508Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/I18N/en.pm 1578 2008-05-10T01:30:21.225794Z claco  $
 package Mango::I18N::en;
 use strict;
 use warnings;
@@ -100,6 +100,7 @@ BEGIN {
     ## form button text
     BUTTON_LABEL_LOGIN       => 'Login',
     BUTTON_LABEL_ADD_TO_CART => 'Add to Cart',
+    BUTTON_LABEL_CHECHKOUT   => 'Checkout',
 
     ## form constraint messages
     CONSTRAINT_USERNAME_NOT_BLANK => 'The username field is required.',

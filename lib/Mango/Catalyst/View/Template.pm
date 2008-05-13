@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/View/Template.pm 1528 2008-04-14T01:08:40.114508Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/View/Template.pm 1582 2008-05-13T00:54:57.184083Z claco  $
 package Mango::Catalyst::View::Template;
 use strict;
 use warnings;
@@ -92,6 +92,12 @@ sub process {
     return $result;
 }
 
+sub render {
+    my $self = shift;
+
+    return $self->view_instance->render(@_);
+}
+
 1;
 __END__
 
@@ -172,6 +178,22 @@ view.
     $self->share_paths([
         '/share/templates',
         '/share/other/templates'
+    ]);
+
+=head2 render
+
+=over
+
+=item Arguments: $c, $name [, \%vars]
+
+=back
+
+Calls render on the template instance.
+
+    $self->render(
+        $c,
+        'template',
+        {title => 'foo'}
     ]);
 
 =head2 root_paths

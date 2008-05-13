@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Login.pm 1528 2008-04-14T01:08:40.114508Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Login.pm 1578 2008-05-10T01:30:21.225794Z claco  $
 package Mango::Catalyst::Controller::Login;
 use strict;
 use warnings;
@@ -15,7 +15,8 @@ BEGIN {
     );
 }
 
-sub index : Form('login') Template('login/index') {
+sub login : Chained('/') PathPrefix Args(0) Form('login')
+  Template('login/index') {
     my ( $self, $c ) = @_;
     my $form = $self->form;
 

@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Logout.pm 1528 2008-04-14T01:08:40.114508Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Logout.pm 1578 2008-05-10T01:30:21.225794Z claco  $
 package Mango::Catalyst::Controller::Logout;
 use strict;
 use warnings;
@@ -9,7 +9,7 @@ BEGIN {
     __PACKAGE__->config( resource_name => 'mango/logout' );
 }
 
-sub index : Template('logout/index') {
+sub logout : Chained('/') PathPrefix Args(0) Template('logout/index') {
     my ( $self, $c ) = @_;
 
     if ( $c->user_exists ) {

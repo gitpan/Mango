@@ -1,12 +1,14 @@
 #!perl -w
-# $Id: /local/CPAN/Mango/t/catalyst/view_text.t 1528 2008-04-14T01:08:40.114508Z claco  $
+# $Id: /local/CPAN/Mango/t/catalyst/view_text.t 1578 2008-05-10T01:30:21.225794Z claco  $
 use strict;
 use warnings;
 
 BEGIN {
     use lib 't/lib';
-    use Mango::Test;
-    use Mango::Test::Catalyst;
+    use Test::More;
+
+    use Mango::Test ();
+    use Mango::Test::Catalyst ();
 
     eval 'require Directory::Scratch';
     if($@) {

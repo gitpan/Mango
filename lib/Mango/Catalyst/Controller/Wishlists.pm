@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Wishlists.pm 1528 2008-04-14T01:08:40.114508Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Wishlists.pm 1578 2008-05-10T01:30:21.225794Z claco  $
 package Mango::Catalyst::Controller::Wishlists;
 use strict;
 use warnings;
@@ -128,7 +128,7 @@ sub delete : Chained('instance') PathPart Args(0) Template('wishlists/view') {
         $wishlist->destroy;
 
         $c->response->redirect(
-            $c->uri_for_resource( 'mango/wishlists', 'index' ) . '/' );
+            $c->uri_for_resource( 'mango/wishlists', 'list' ) . '/' );
     }
 
     return;
@@ -143,7 +143,8 @@ sub restore : Chained('instance') PathPart Args(0) Template('wishlists/view')
     if ( $self->submitted && $self->validate->success ) {
         $c->user->cart->restore( $wishlist, $form->field('mode') );
 
-        $c->response->redirect( $c->uri_for_resource('mango/cart') . '/' );
+        $c->response->redirect(
+            $c->uri_for_resource( 'mango/cart', 'view' ) . '/' );
     }
 
     return;

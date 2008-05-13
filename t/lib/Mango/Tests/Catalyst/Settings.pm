@@ -1,19 +1,20 @@
-#!perl -w
-# $Id: /local/CPAN/Mango/t/catalyst/live_settings_profile.t 1528 2008-04-14T01:08:40.114508Z claco  $
+# $Id: /local/CPAN/Mango/t/lib/Mango/Tests/Catalyst/Settings.pm 1578 2008-05-10T01:30:21.225794Z claco  $
+package Mango::Tests::Catalyst::Settings;
 use strict;
 use warnings;
 
 BEGIN {
-    use lib 't/lib';
-    use Mango::Test tests => 30;
+    use base 'Mango::Test::Class';
 
-    Mango::Test->mk_app;
-};
+    use Test::More;
+    use Path::Class ();
+}
 
+sub path {'settings'};
 
-{
-    my $m = Test::WWW::Mechanize::Catalyst->new;
-
+sub tests : Test(31) {
+    my $self = shift;
+    my $m = $self->client;
 
     ## not logged in
     $m->get_ok('http://localhost/');
@@ -41,6 +42,7 @@ BEGIN {
 
     ## edit profile
     $m->follow_link_ok({text => 'Profile'});
+    is($m->uri->path, '/' . $self->path . '/profile/');
     $m->title_like(qr/profile/i);
     $m->submit_form_ok({
         form_name => 'settings_profile',
@@ -77,3 +79,5 @@ BEGIN {
     ok(! $m->find_link(text => 'Login'));
     ok($m->find_link(text => 'Logout'));
 };
+
+1;

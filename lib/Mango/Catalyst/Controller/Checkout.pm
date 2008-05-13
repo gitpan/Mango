@@ -1,33 +1,23 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Checkout.pm 1528 2008-04-14T01:08:40.114508Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Checkout.pm 1578 2008-05-10T01:30:21.225794Z claco  $
 package Mango::Catalyst::Controller::Checkout;
 use strict;
 use warnings;
 
 BEGIN {
     use base qw/Mango::Catalyst::Controller/;
+
+    __PACKAGE__->config(
+        resource_name => 'mango/checkout',
+        form_directory =>
+          Path::Class::Dir->new( Mango->share, 'forms', 'checkout' )
+    );
 }
 
-__PACKAGE__->config(
-    workflow => {
-        initial_state => 'initialize',
-        states        => [
-            {
-                name        => 'initialize',
-                transitions => [
-                    {
-                        name     => 'edit_billing',
-                        to_state => 'billing'
-                    }
-                ]
-            },
-            { name => 'billing' },
-            { name => 'shipping' },
-            { name => 'payment' },
-            { name => 'preview' },
-            { name => 'complete' }
-        ]
-    }
-);
+sub index : Template('cart/index') {
+    my ( $self, $c ) = @_;
+
+    return;
+}
 
 sub instance : Chained('/') PathPrefix Args(1) {
     my ( $self, $c, $state ) = @_;

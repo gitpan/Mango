@@ -1,4 +1,5 @@
-$Id: /local/CPAN/Mango/TODO 1528 2008-04-14T01:08:40.114508Z claco  $
+$Id: /local/CPAN/Mango/TODO 1578 2008-05-10T01:30:21.225794Z claco  $
+- Add ability to have feed item content run through TT view
 - Added method to set config->mango->conrollers-name
 - Added rating/s() and comments() to Object using Ratings/Comments models
 - Cleanup blessed

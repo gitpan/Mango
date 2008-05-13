@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/share/forms/admin/roles/edit.yml 1528 2008-04-14T01:08:40.114508Z claco  $
+# $Id: /local/CPAN/Mango/share/forms/admin/roles/edit.yml 1578 2008-05-10T01:30:21.225794Z claco  $
 ---
 id: admin_roles_edit
 name: admin_roles_edit

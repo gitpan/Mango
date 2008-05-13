@@ -1,5 +1,5 @@
 ## no critic (ProhibitMultiplePackages)
-# $Id: /local/CPAN/Mango/lib/Mango/Iterator.pm 1528 2008-04-14T01:08:40.114508Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Iterator.pm 1578 2008-05-10T01:30:21.225794Z claco  $
 package Mango::Iterator;
 use strict;
 use warnings;

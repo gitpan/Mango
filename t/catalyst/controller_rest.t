@@ -1,11 +1,11 @@
 #!perl -w
-# $Id: /local/CPAN/Mango/t/catalyst/controller_rest.t 1528 2008-04-14T01:08:40.114508Z claco  $
+# $Id: /local/CPAN/Mango/t/catalyst/controller_rest.t 1578 2008-05-10T01:30:21.225794Z claco  $
 use strict;
 use warnings;
 
 BEGIN {
     use lib 't/lib';
-    use Mango::Test tests => 16;
+    use Test::More tests => 16;
 
     use_ok('Mango::Catalyst::Controller::REST');
     use_ok('Mango::Test::Catalyst');

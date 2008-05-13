@@ -1,5 +1,12 @@
-# $Id: /local/CPAN/Mango/Changes 1528 2008-04-14T01:08:40.114508Z claco  $
+# $Id: /local/CPAN/Mango/Changes 1584 2008-05-13T01:34:22.553769Z claco  $
 This file documents the revision history for Perl extension Mango.
+
+0.01000_12 Mon May 12 21:18:25 2008
+    - Fixed various controllers to use Chained instead of index : Private
+    - Converted Live Catalyst tests to Test::Class and added tests for
+        path config option and subclass renames
+    - Added RSS tests to live tests
+    - Added Admin tests
 
 0.01000_11 Sun Apr 13 20:39:27 2008
     - Added just enough pod to get spelling/coverage happy.

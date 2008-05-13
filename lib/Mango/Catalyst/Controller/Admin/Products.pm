@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Admin/Products.pm 1528 2008-04-14T01:08:40.114508Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Admin/Products.pm 1578 2008-05-10T01:30:21.225794Z claco  $
 package Mango::Catalyst::Controller::Admin::Products;
 use strict;
 use warnings;
@@ -95,7 +95,8 @@ sub edit : Chained('load') PathPart Args(0) Template('admin/products/edit') {
                 return 1;
             }
             my $existing =
-              $c->model('Products')->search( { sku => $form->field('sku') } );
+              $c->model('Products')->search( { sku => $form->field('sku') } )
+              ->first;
 
             if ( $existing && $existing->id != $product->id ) {
                 return;

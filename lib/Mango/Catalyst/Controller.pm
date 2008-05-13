@@ -1,5 +1,5 @@
 ## no critic (ProhibitMixedCaseSubs)
-# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller.pm 1528 2008-04-14T01:08:40.114508Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller.pm 1578 2008-05-10T01:30:21.225794Z claco  $
 package Mango::Catalyst::Controller;
 use strict;
 use warnings;

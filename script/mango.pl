@@ -1,5 +1,5 @@
 #!perl -w
-# $Id: /local/CPAN/Mango/script/mango.pl 1528 2008-04-14T01:08:40.114508Z claco  $
+# $Id: /local/CPAN/Mango/script/mango.pl 1578 2008-05-10T01:30:21.225794Z claco  $
 use strict;
 use warnings;
 

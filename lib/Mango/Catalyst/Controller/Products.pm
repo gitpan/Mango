@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Products.pm 1528 2008-04-14T01:08:40.114508Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Products.pm 1580 2008-05-13T00:45:03.642263Z claco  $
 package Mango::Catalyst::Controller::Products;
 use strict;
 use warnings;
@@ -14,26 +14,6 @@ BEGIN {
         form_directory =>
           Path::Class::Dir->new( Mango->share, 'forms', 'products' )
     );
-}
-
-sub list : Chained('/') PathPrefix Args(0) Template('products/list') {
-    my ( $self, $c ) = @_;
-    my $tags = $c->model('Products')->tags( {}, { order_by => 'tag.name' } );
-    $c->stash->{'tags'} = $tags;
-
-    my $tagcloud = HTML::TagCloud::Sortable->new;
-    foreach my $tag ( $tags->all ) {
-        $tagcloud->add(
-            {
-                name  => $tag->name,
-                count => $tag->count,
-                url   => $c->uri_for( 'tags', $tag->name ) . '/'
-            }
-        );
-    }
-    $c->stash->{'tagcloud'} = $tagcloud;
-
-    return;
 }
 
 sub instance : Chained('/') PathPrefix CaptureArgs(1) {
@@ -57,6 +37,29 @@ sub view : Chained('instance') PathPart('') Args(0) Template('products/view')
     return;
 }
 
+sub list : Chained('/') PathPrefix Args(0) Template('products/list') {
+    my ( $self, $c ) = @_;
+    my $tags = $c->model('Products')->tags( {}, { order_by => 'tag.name' } );
+    $c->stash->{'tags'} = $tags;
+
+    my $tagcloud = HTML::TagCloud::Sortable->new;
+    foreach my $tag ( $tags->all ) {
+        $tagcloud->add(
+            {
+                name  => $tag->name,
+                count => $tag->count,
+                url   => $c->uri_for_resource(
+                    'mango/products', 'tags', $tag->name
+                  )
+                  . '/'
+            }
+        );
+    }
+    $c->stash->{'tagcloud'} = $tagcloud;
+
+    return;
+}
+
 sub tags : Local Template('products/list') Feed('Atom') Feed('RSS') {
     my ( $self, $c, @tags ) = @_;
 
@@ -76,8 +79,10 @@ sub tags : Local Template('products/list') Feed('Atom') Feed('RSS') {
     if ( $self->wants_feed ) {
         $self->entity(
             {
-                title   => 'Products: ' . join( '. ', @tags ),
-                link    => $c->uri_for( 'tags',       @tags ) . '/',
+                title => 'Products: ' . join( '. ', @tags ),
+                link =>
+                  $c->uri_for_resource( 'mango/products', 'tags', @tags )
+                  . '/',
                 entries => [
                     map {
                         {
@@ -88,13 +93,15 @@ sub tags : Local Template('products/list') Feed('Atom') Feed('RSS') {
                               $c->uri_for_resource( 'mango/products', 'view',
                                 [ $_->sku ] )
                               . '/',
-                            content => '<p>Price: '
-                              . $_->price->as_string('FMT_SYMBOL')
-                              . '</p><p>'
-                              . (
-                                $_->description || 'No description available.'
-                              )
-                              . '</p>',
+                            content => $c->view('HTML')->render(
+                                $c,
+                                'products/feed',
+                                {
+                                    %{ $c->stash },
+                                    product         => $_,
+                                    DISABLE_WRAPPER => 1
+                                }
+                            ),
                             issued   => $_->created,
                             modified => $_->updated
                         }
@@ -118,7 +125,10 @@ sub tags : Local Template('products/list') Feed('Atom') Feed('RSS') {
                 {
                     name  => $tag->name,
                     count => $tag->count,
-                    url   => $c->uri_for( 'tags', @tags, $tag->name ) . '/'
+                    url =>
+                      $c->uri_for_resource( 'mango/products', 'tags', @tags,
+                        $tag->name )
+                      . '/'
                 }
             );
         }

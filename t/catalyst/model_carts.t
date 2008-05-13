@@ -1,12 +1,14 @@
 #!perl -w
-# $Id: /local/CPAN/Mango/t/catalyst/model_carts.t 1528 2008-04-14T01:08:40.114508Z claco  $
+# $Id: /local/CPAN/Mango/t/catalyst/model_carts.t 1578 2008-05-10T01:30:21.225794Z claco  $
 use strict;
 use warnings;
 
 BEGIN {
     use lib 't/lib';
-    use Mango::Test tests => 12;
-    use Mango::Test::Catalyst;
+    use Test::More tests => 12;
+
+    use Mango::Test ();
+    use Mango::Test::Catalyst ();
 
     use_ok('Mango::Catalyst::Model::Carts');
     use_ok('Mango::Exception', ':try');

@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Cart/Items.pm 1528 2008-04-14T01:08:40.114508Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Cart/Items.pm 1578 2008-05-10T01:30:21.225794Z claco  $
 package Mango::Catalyst::Controller::Cart::Items;
 use strict;
 use warnings;
@@ -31,7 +31,7 @@ sub instance : Chained('../instance') PathPart('items') CaptureArgs(1) {
     return;
 }
 
-sub update : Chained('instance') PathPart Args(0) Template('cart/index') {
+sub update : Chained('instance') PathPart Args(0) Template('cart/view') {
     my ( $self, $c ) = @_;
     my $form = $self->form;
     my $item = $c->stash->{'item'};
@@ -40,13 +40,14 @@ sub update : Chained('instance') PathPart Args(0) Template('cart/index') {
         $item->quantity( $form->field('quantity') );
         $item->update;
 
-        $c->res->redirect( $c->uri_for_resource('mango/cart') . '/' );
+        $c->res->redirect(
+            $c->uri_for_resource( 'mango/cart', 'view' ) . '/' );
     }
 
     return;
 }
 
-sub delete : Chained('instance') PathPart Args(0) Template('cart/index') {
+sub delete : Chained('instance') PathPart Args(0) Template('cart/view') {
     my ( $self, $c ) = @_;
     my $form = $self->form;
     my $cart = $c->stash->{'cart'};
@@ -55,7 +56,8 @@ sub delete : Chained('instance') PathPart Args(0) Template('cart/index') {
     if ( $self->submitted && $self->validate->success ) {
         $cart->delete( { id => $item->id } );
 
-        $c->res->redirect( $c->uri_for_resource('mango/cart') . '/' );
+        $c->res->redirect(
+            $c->uri_for_resource( 'mango/cart', 'view' ) . '/' );
     }
 
     return;

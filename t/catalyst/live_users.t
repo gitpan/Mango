@@ -1,35 +1,8 @@
 #!perl -w
-# $Id: /local/CPAN/Mango/t/catalyst/live_users.t 1528 2008-04-14T01:08:40.114508Z claco  $
+# $Id: /local/CPAN/Mango/t/catalyst/live_users.t 1578 2008-05-10T01:30:21.225794Z claco  $
 use strict;
 use warnings;
 
-BEGIN {
-    use lib 't/lib';
-    use Mango::Test tests => 7;
-    use Path::Class 'file';
-
-    Mango::Test->mk_app;
-};
-
-
-{
-    my $m = Test::WWW::Mechanize::Catalyst->new;
-
-
-    ## users not found
-    $m->get('http://localhost/users/');
-    is($m->status, 404);
-    $m->content_like(qr/resource.*not found/i);
-
-
-    ## invalid user not found
-    $m->get('http://localhost/users/claco/');
-    is($m->status, 404);
-    $m->content_like(qr/user.*not.*found/i);
-
-
-    ## real user
-    $m->get_ok('http://localhost/users/admin/');
-    $m->title_like(qr/admin\'s profile/i);
-    $m->content_contains('Admin User');
-};
+use lib 't/lib';
+use Mango::Tests::Catalyst::Users;
+Mango::Tests::Catalyst::Users->runtests;

@@ -5,8 +5,10 @@ author:
 build_requires:
   Directory::Scratch: 0
   ExtUtils::MakeMaker: 6.11
+  Test::Class: 0
+  Test::More: 0
 distribution_type: module
-generated_by: 'Module::Install version 0.71'
+generated_by: 'Module::Install version 0.72'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.3.html
@@ -14,6 +16,7 @@ meta-spec:
 name: Mango
 no_index:
   directory:
+    - share
     - share
     - inc
     - t
@@ -51,6 +54,7 @@ requires:
   MIME::Types: 0
   Module::Starter: 1.42
   Path::Class: 0
+  SQL::Translator: 0.08
   Scalar::Util: 0
   Set::Scalar: 0
   Test::WWW::Mechanize::Catalyst: 0
@@ -60,4 +64,4 @@ requires:
   YAML: 0
   perl: 5.8.1
 tests: 't/*.t t/*/*.t'
-version: 0.01000_11
+version: 0.01000_12
