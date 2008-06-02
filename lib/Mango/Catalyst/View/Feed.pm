@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/View/Feed.pm 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/View/Feed.pm 1644 2008-06-02T01:46:53.055259Z claco  $
 package Mango::Catalyst::View::Feed;
 use strict;
 use warnings;
@@ -23,6 +23,40 @@ sub process {
         Mango::Exception->throw('FEED_NOT_FOUND');
     } elsif ( !Scalar::Util::blessed $feed || !$feed->isa('XML::Feed') ) {
         Mango::Exception->throw('NOT_A_FEED');
+    }
+
+    ## fixup until XML::Feed is fixed
+    if ( $feed->format eq 'RSS 2.0' ) {
+        if (
+            delete $feed->{'rss'}->{'modules'}
+            ->{'http://purl.org/rss/1.0/modules/dcterms/'} )
+        {
+            $feed->{'rss'}->add_module(
+                prefix => 'dcterms',
+                uri    => 'http://purl.org/dc/terms/'
+            );
+        }
+        $feed->{'rss'}->add_module(
+            prefix => 'atom',
+            uri    => 'http://www.w3.org/2005/Atom'
+        );
+        $feed->{'rss'}->channel(
+            atom => {
+                link => {
+                    href => $feed->link,
+                    rel  => 'self',
+                    type => 'application/rss+xml'
+                }
+            }
+        );
+    } elsif ( $feed->format eq 'Atom' ) {
+        $feed->{'atom'}->add_link(
+            {
+                href => $feed->link,
+                rel  => 'self',
+                type => 'application/atom+xml'
+            }
+        );
     }
 
     foreach my $entry ( $self->feed_entries( $c, $type ) ) {
@@ -64,6 +98,13 @@ sub feed {
     foreach my $key ( keys %{$data} ) {
         if ( $feed->can($key) ) {
             $feed->$key( $data->{$key} );
+        } else {
+            ## another hack until XML::Feed is fixed
+            if ( $feed->format eq 'Atom' ) {
+                if ( $feed->{'atom'}->can($key) ) {
+                    $feed->{'atom'}->$key( $data->{$key} );
+                }
+            }
         }
     }
 

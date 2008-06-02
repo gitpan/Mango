@@ -1,8 +1,8 @@
-# $Id: /local/CPAN/Mango/share/forms/admin/roles/edit.yml 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/share/forms/admin/roles/edit.yml 1644 2008-06-02T01:46:53.055259Z claco  $
 ---
 id: admin_roles_edit
-name: admin_roles_edit
-method: POST
+method: post
+auto_fieldset: 1
 javascript: 0
 stylesheet: 1
 sticky: 1
@@ -17,12 +17,9 @@ fields:
   - name:
       type: text
       size: 25
-      disabled: 1
+      disabled: disabled
       force: 1
       maxlength: 25
-      constraints:
-        - NOT_BLANK
-        - LENGTH, 1, 25
   - description:
       type: text
       size: 50
@@ -32,7 +29,9 @@ fields:
         - LENGTH, 1, 100
   - created:
       size: 20
-      disabled: 1
+      disabled: disabled
+      force: 1
   - updated:
       size: 20
-      disabled: 1
+      disabled: disabled
+      force: 1

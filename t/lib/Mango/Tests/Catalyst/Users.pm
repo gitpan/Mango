@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/t/lib/Mango/Tests/Catalyst/Users.pm 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/t/lib/Mango/Tests/Catalyst/Users.pm 1644 2008-06-02T01:46:53.055259Z claco  $
 package Mango::Tests::Catalyst::Users;
 use strict;
 use warnings;
@@ -55,7 +55,7 @@ sub startup : Test(startup => +2) {
 
 sub path {'users'};
 
-sub tests : Test(7) {
+sub tests : Test(10) {
     my $self = shift;
     my $m = $self->client;
 
@@ -63,35 +63,41 @@ sub tests : Test(7) {
     $m->get('http://localhost/users' . $self->path . '/');
     is($m->status, 404);
     $m->content_like(qr/resource.*not found/i);
+    $self->validate_markup($m->content);
 
 
     ## invalid user not found
     $m->get('http://localhost/' . $self->path . '/claco/');
     is($m->status, 404);
     $m->content_like(qr/user.*not.*found/i);
+    $self->validate_markup($m->content);
 
 
     ## real user
     $m->get_ok('http://localhost/' . $self->path . '/admin/');
     $m->title_like(qr/admin\'s profile/i);
     $m->content_contains('Admin User');
+    $self->validate_markup($m->content);
 };
 
-sub tests_create : Test(14) {
-    my $m = shift->client;
+sub tests_create : Test(25) {
+    my $self = shift;
+    my $m = $self->client;
 
     ## not logged in
     $m->get_ok('http://localhost/');
+    $self->validate_markup($m->content);
     $m->follow_link_ok({text => 'Login'});
     $m->title_like(qr/login/i);
     $m->content_unlike(qr/already logged in/i);
     $m->content_unlike(qr/welcome anonymous/i);
     ok(! $m->find_link(text => 'Logout'));
+    $self->validate_markup($m->content);
 
 
     ## fail login
     $m->submit_form_ok({
-        form_name => 'login',
+        form_id => 'login',
         fields    => {
             username => 'claco',
             password => 'foo'
@@ -100,36 +106,78 @@ sub tests_create : Test(14) {
     $m->title_like(qr/login/i);
     $m->content_like(qr/username or password.*incorrect/i);
     ok(! $m->find_link(text => 'Logout'));
+    $self->validate_markup($m->content);
 
 
     ## Sign Up
     $m->follow_link_ok({text => 'Sign Up!'});
+    $self->validate_markup($m->content);
+
+
+## fail signup existing email
     $m->submit_form_ok({
-        form_name => 'users_create',
+        form_id => 'users_create',
         fields    => {
             username => 'claco',
             password => 'foo',
             confirm_password => 'foo',
             first_name => 'Christopher',
-            last_name => 'Laco'
+            last_name => 'Laco',
+            email => 'webmaster@example.com'
+        }
+    });
+    $m->content_contains('<li>CONSTRAINT_EMAIL_UNIQUE</li>');
+    $self->validate_markup($m->content);
+
+
+    ## fail signup existing username
+    $m->submit_form_ok({
+        form_id => 'users_create',
+        fields    => {
+            username => 'admin',
+            password => 'foo',
+            confirm_password => 'foo',
+            first_name => 'Christopher',
+            last_name => 'Laco',
+            email => 'claco@example.com'
+        }
+    });
+    $m->content_contains('<li>The username requested already exists.</li>');
+    $self->validate_markup($m->content);
+
+
+    ## sign up
+    $m->submit_form_ok({
+        form_id => 'users_create',
+        fields    => {
+            username => 'claco',
+            password => 'foo',
+            confirm_password => 'foo',
+            first_name => 'Christopher',
+            last_name => 'Laco',
+            email => 'claco@example.com'
         }
     });
     $m->content_like(qr/welcome christopher/i);
-    $m->content_like(qr/profile/i);    
+    $m->content_like(qr/profile/i);
+    $self->validate_markup($m->content);
 }
 
-sub tests_wishlists : Test(12) {
+sub tests_wishlists : Test(16) {
     my $self = shift;
     my $m = $self->client;
 
     ## view wishlist(s)
     $m->get_ok('http://localhost/' . $self->path . '/admin/');
+    $self->validate_markup($m->content);
     $m->title_like(qr/admin\'s profile/i);
     $m->follow_link_ok({text => 'Admin\'s Wishlists'});
+    $self->validate_markup($m->content);
     $m->title_like(qr/admin\'s wishlists/i);
     $m->content_contains('My Wishlist');
     $m->content_contains('My Wishlist Description');
     $m->follow_link_ok({text => 'My Wishlist'});
+    $self->validate_markup($m->content);
     $m->title_like(qr/my wishlist/i);
     $m->content_contains('ABC-123');
     $m->content_contains('<td align="right">$1.23</td>');
@@ -139,9 +187,10 @@ sub tests_wishlists : Test(12) {
     $m->get('http://localhost/' . $self->path . '/admin/wishlists/999/');
     is($m->status, 404);
     $m->content_like(qr/wishlist.*not.*found/i);
+    $self->validate_markup($m->content);
 }
 
-sub test_wishlists_atom_feed : Test(27) {
+sub test_wishlists_atom_feed : Test(28) {
     my $self = shift;
     my $m = $self->client;
 
@@ -150,6 +199,8 @@ sub test_wishlists_atom_feed : Test(27) {
     $m->follow_link_ok({text => 'Atom'});
     
     my $content = $m->content;
+    $self->validate_feed($content);
+
     my $feed = XML::Feed->parse(\$content);
     isa_ok($feed, 'XML::Feed');
     is($feed->format, 'Atom');
@@ -157,7 +208,7 @@ sub test_wishlists_atom_feed : Test(27) {
     is($feed->link, 'http://localhost/' . $self->path . '/admin/wishlists/');
     is($feed->tagline, undef);
     is($feed->description, undef);
-    is($feed->author, undef);
+    is($feed->author, 'webmaster@example.com (Admin User)');
     is($feed->language, 'en');
     is($feed->copyright, undef);
     isa_ok($feed->modified, 'DateTime');
@@ -173,55 +224,60 @@ sub test_wishlists_atom_feed : Test(27) {
     $m->get_ok($entry->link);
     like($entry->content->body, qr/My Wishlist Description/);
     is($entry->content->type, 'text/html');
-    is($entry->summary->body, undef);
+    like($entry->summary->body, qr/My Wishlist Description/);
     is($entry->category, undef);
-    is($entry->author, 'Admin User');
-    is($entry->id, 1);
-    isa_ok($entry->issued, 'DateTime');
-    isa_ok($entry->modified, 'DateTime');
-}
-
-sub test_wishlists_rss_feed : Test(27) {
-    my $self = shift;
-    my $m = $self->client;
-
-    $m->get_ok('http://localhost/' . $self->path . '/admin/');
-    $m->follow_link_ok({text => 'Admin\'s Wishlists'});
-    $m->follow_link_ok({text => 'RSS'});
-    
-    my $content = $m->content;
-    my $feed = XML::Feed->parse(\$content);
-    isa_ok($feed, 'XML::Feed');
-    is($feed->format, 'RSS 2.0');
-    is($feed->title, 'Admin User\'s Wishlists');
-    is($feed->link, 'http://localhost/' . $self->path . '/admin/wishlists/');
-    is($feed->tagline, '');
-    is($feed->description, '');
-    is($feed->author, undef);
-    is($feed->language, 'en');
-    is($feed->copyright, undef);
-    isa_ok($feed->modified, 'DateTime');
-    is($feed->generator, undef);
-
-    my @entries = $feed->entries;
-    is(scalar @entries, 1);
-
-    my $entry = $entries[0];
-    isa_ok($entry, 'XML::Feed::Entry');
-    is($entry->title, 'My Wishlist');
-    is($entry->link, 'http://localhost/' . $self->path . '/admin/wishlists/1/');
-    $m->get_ok($entry->link);
-    like($entry->content->body, qr/My Wishlist Description/);
-    is($entry->content->type, 'text/html');
-    is($entry->summary->body, undef);
-    is($entry->category, undef);
-    is($entry->author, 'Admin User');
+    is($entry->author, 'webmaster@example.com (Admin User)');
     is($entry->id, 'http://localhost/' . $self->path . '/admin/wishlists/1/');
     isa_ok($entry->issued, 'DateTime');
     isa_ok($entry->modified, 'DateTime');
 }
 
-sub test_wishlist_atom_feed : Test(29) {
+sub test_wishlists_rss_feed : Test(28) {
+    my $self = shift;
+    my $m = $self->client;
+
+    $m->get_ok('http://localhost/' . $self->path . '/admin/');
+    $m->follow_link_ok({text => 'Admin\'s Wishlists'});
+    $m->follow_link_ok({text => 'RSS'});
+    
+    my $content = $m->content;
+    $self->validate_feed($content);
+
+    ## fix for now until XML::Feed groks newer dcterms we now emit
+    $content =~ s/http:\/\/purl.org\/dc\/terms\//http:\/\/purl.org\/rss\/1.0\/modules\/dcterms\//;
+
+    my $feed = XML::Feed->parse(\$content);
+    isa_ok($feed, 'XML::Feed');
+    is($feed->format, 'RSS 2.0');
+    is($feed->title, 'Admin User\'s Wishlists');
+    is($feed->link, 'http://localhost/' . $self->path . '/admin/wishlists/');
+    is($feed->tagline, '');
+    is($feed->description, '');
+    is($feed->author, 'webmaster@example.com (Admin User)');
+    is($feed->language, 'en');
+    is($feed->copyright, undef);
+    isa_ok($feed->modified, 'DateTime');
+    is($feed->generator, undef);
+
+    my @entries = $feed->entries;
+    is(scalar @entries, 1);
+
+    my $entry = $entries[0];
+    isa_ok($entry, 'XML::Feed::Entry');
+    is($entry->title, 'My Wishlist');
+    is($entry->link, 'http://localhost/' . $self->path . '/admin/wishlists/1/');
+    $m->get_ok($entry->link);
+    like($entry->content->body, qr/My Wishlist Description/);
+    is($entry->content->type, 'text/html');
+    like($entry->summary->body, qr/My Wishlist Description/);
+    is($entry->category, undef);
+    is($entry->author, 'webmaster@example.com (Admin User)');
+    is($entry->id, 'http://localhost/' . $self->path . '/admin/wishlists/1/');
+    isa_ok($entry->issued, 'DateTime');
+    isa_ok($entry->modified, 'DateTime');
+}
+
+sub test_wishlist_atom_feed : Test(30) {
     my $self = shift;
     my $m = $self->client;
 
@@ -231,6 +287,8 @@ sub test_wishlist_atom_feed : Test(29) {
     $m->follow_link_ok({text => 'Atom'});
     
     my $content = $m->content;
+    $self->validate_feed($content);
+
     my $feed = XML::Feed->parse(\$content);
     isa_ok($feed, 'XML::Feed');
     is($feed->format, 'Atom');
@@ -238,7 +296,7 @@ sub test_wishlist_atom_feed : Test(29) {
     is($feed->link, 'http://localhost/' . $self->path . '/admin/wishlists/1/');
     is($feed->tagline, undef);
     is($feed->description, undef);
-    is($feed->author, undef);
+    is($feed->author, 'webmaster@example.com (Admin User)');
     is($feed->language, 'en');
     is($feed->copyright, undef);
     isa_ok($feed->modified, 'DateTime');
@@ -255,15 +313,15 @@ sub test_wishlist_atom_feed : Test(29) {
     like($entry->content->body, qr/\$1\.23/);
     like($entry->content->body, qr//);
     is($entry->content->type, 'text/html');
-    is($entry->summary->body, undef);
+    like($entry->summary->body, qr/ABC Product Description/);
     is($entry->category, undef);
-    is($entry->author, 'Admin User');
-    is($entry->id, 1);
+    is($entry->author, 'webmaster@example.com (Admin User)');
+    is($entry->id, 'http://localhost/products/ABC-123/');
     isa_ok($entry->issued, 'DateTime');
     isa_ok($entry->modified, 'DateTime');
 }
 
-sub test_wishlist_rss_feed : Test(29) {
+sub test_wishlist_rss_feed : Test(30) {
     my $self = shift;
     my $m = $self->client;
 
@@ -273,6 +331,11 @@ sub test_wishlist_rss_feed : Test(29) {
     $m->follow_link_ok({text => 'RSS'});
     
     my $content = $m->content;
+    $self->validate_feed($content);
+
+    ## fix for now until XML::Feed groks newer dcterms we now emit
+    $content =~ s/http:\/\/purl.org\/dc\/terms\//http:\/\/purl.org\/rss\/1.0\/modules\/dcterms\//;
+
     my $feed = XML::Feed->parse(\$content);
     isa_ok($feed, 'XML::Feed');
     is($feed->format, 'RSS 2.0');
@@ -280,7 +343,7 @@ sub test_wishlist_rss_feed : Test(29) {
     is($feed->link, 'http://localhost/' . $self->path . '/admin/wishlists/1/');
     is($feed->tagline, '');
     is($feed->description, '');
-    is($feed->author, undef);
+    is($feed->author, 'webmaster@example.com (Admin User)');
     is($feed->language, 'en');
     is($feed->copyright, undef);
     isa_ok($feed->modified, 'DateTime');
@@ -295,11 +358,11 @@ sub test_wishlist_rss_feed : Test(29) {
     is($entry->link, 'http://localhost/products/ABC-123/');
     $m->get_ok($entry->link);
     like($entry->content->body, qr/\$1\.23/);
-    like($entry->content->body, qr//);
+    like($entry->content->body, qr/ABC Product Description/);
     is($entry->content->type, 'text/html');
-    is($entry->summary->body, undef);
+    like($entry->summary->body, qr/ABC Product Description/);
     is($entry->category, undef);
-    is($entry->author, 'Admin User');
+    is($entry->author, 'webmaster@example.com (Admin User)');
     is($entry->id, 'http://localhost/products/ABC-123/');
     isa_ok($entry->issued, 'DateTime');
     isa_ok($entry->modified, 'DateTime');

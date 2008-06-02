@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/t/lib/Mango/Test.pm 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/t/lib/Mango/Test.pm 1644 2008-06-02T01:46:53.055259Z claco  $
 package Mango::Test;
 use strict;
 use warnings;
@@ -116,9 +116,9 @@ sub populate_schema {
     ]);
 
     $schema->populate('Profiles', [
-        [ qw/id user_id first_name last_name created updated/ ],
-        [1,1,'First1', 'Last1',$date,$date],
-        [2,2,'First2', 'Last2',$date,$date],
+        [ qw/id user_id first_name last_name email created updated/ ],
+        [1,1,'First1', 'Last1', 'email1@example.com', $date,$date],
+        [2,2,'First2', 'Last2', 'email2@example.com', $date,$date],
     ]);
 
     $schema->populate('Carts', [

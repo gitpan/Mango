@@ -1,5 +1,5 @@
 #!perl -w
-# $Id: /local/CPAN/Mango/t/pod_spelling.t 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/t/pod_spelling.t 1644 2008-06-02T01:46:53.055259Z claco  $
 use strict;
 use warnings;
 
@@ -20,6 +20,9 @@ add_stopwords(<DATA>);
 all_pod_files_spelling_ok();
 
 __DATA__
+BUILD
+workflow
+login
 RESTish
 urls
 exisistent

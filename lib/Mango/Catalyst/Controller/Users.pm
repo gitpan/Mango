@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Users.pm 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Users.pm 1644 2008-06-02T01:46:53.055259Z claco  $
 package Mango::Catalyst::Controller::Users;
 use strict;
 use warnings;
@@ -51,6 +51,13 @@ sub create : Local Template('users/create') {
               ->search( { username => $form->field('username') } )->count;
         }
     );
+    $form->unique(
+        'email',
+        sub {
+            return !$c->model('Profiles')
+              ->search( { email => $form->field('email') } )->count;
+        }
+    );
 
     if ( $self->submitted && $self->validate->success ) {
         my $user = $c->model('Users')->create(
@@ -64,7 +71,8 @@ sub create : Local Template('users/create') {
             {
                 user_id    => $user->id,
                 first_name => $form->field('first_name'),
-                last_name  => $form->field('last_name')
+                last_name  => $form->field('last_name'),
+                email      => $form->field('email')
             }
         );
 
@@ -77,6 +85,8 @@ sub create : Local Template('users/create') {
 
         $c->response->redirect(
             $c->uri_for_resource( 'mango/settings', 'profile' ) . '/' );
+
+        $c->redirect_from_login;
     }
 
     return;

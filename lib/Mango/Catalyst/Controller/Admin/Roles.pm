@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Admin/Roles.pm 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Admin/Roles.pm 1644 2008-06-02T01:46:53.055259Z claco  $
 package Mango::Catalyst::Controller::Admin::Roles;
 use strict;
 use warnings;
@@ -15,7 +15,7 @@ BEGIN {
     );
 }
 
-sub index : Template('admin/roles/index') {
+sub list : Chained('/') PathPrefix Args(0) Template('admin/roles/list') {
     my ( $self, $c ) = @_;
     my $page = $c->request->param('page') || 1;
     my $roles = $c->model('Roles')->search(
@@ -33,7 +33,7 @@ sub index : Template('admin/roles/index') {
     return;
 }
 
-sub load : Chained('/') PathPrefix CaptureArgs(1) {
+sub instance : Chained('/') PathPrefix CaptureArgs(1) {
     my ( $self, $c, $id ) = @_;
     my $role = $c->model('Roles')->get_by_id($id);
 
@@ -74,7 +74,7 @@ sub create : Local Template('admin/roles/create') {
     return;
 }
 
-sub edit : Chained('load') PathPart Args(0) Template('admin/roles/edit') {
+sub edit : Chained('instance') PathPart Args(0) Template('admin/roles/edit') {
     my ( $self, $c ) = @_;
     my $role = $c->stash->{'role'};
     my $form = $self->form;
@@ -99,7 +99,8 @@ sub edit : Chained('load') PathPart Args(0) Template('admin/roles/edit') {
     return;
 }
 
-sub delete : Chained('load') PathPart Args(0) Template('admin/roles/delete') {
+sub delete : Chained('instance') PathPart Args(0)
+  Template('admin/roles/delete') {
     my ( $self, $c ) = @_;
     my $form = $self->form;
     my $role = $c->stash->{'role'};
@@ -110,7 +111,7 @@ sub delete : Chained('load') PathPart Args(0) Template('admin/roles/delete') {
             $role->destroy;
 
             $c->response->redirect(
-                $c->uri_for( $self->action_for('index') ) . '/' );
+                $c->uri_for( $self->action_for('list') ) . '/' );
         } else {
             $c->stash->{'errors'} = ['ID_MISTMATCH'];
         }
@@ -138,7 +139,7 @@ used to edit user roles.
 
 =head1 ACTIONS
 
-=head2 index : /admin/roles/
+=head2 list : /admin/roles/
 
 Displays the list of roles.
 
@@ -154,7 +155,7 @@ Deletes the specified role.
 
 Updates the specified role.
 
-=head2 load : /admin/role/<id>/
+=head2 instance : /admin/role/<id>/
 
 Loads a specific role.
 

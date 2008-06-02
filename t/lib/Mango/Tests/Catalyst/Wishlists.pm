@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/t/lib/Mango/Tests/Catalyst/Wishlists.pm 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/t/lib/Mango/Tests/Catalyst/Wishlists.pm 1644 2008-06-02T01:46:53.055259Z claco  $
 package Mango::Tests::Catalyst::Wishlists;
 use strict;
 use warnings;
@@ -42,40 +42,47 @@ sub startup : Test(startup => +1) {
 
 sub path {'wishlists'};
 
-sub tests : Test(204) {
+sub tests : Test(252) {
     my $self = shift;
     my $m = $self->client;
 
     ## add sku to cart
     $m->get_ok('http://localhost/');
     ok(! $m->find_link(text => 'Wishlists'));
+    $self->validate_markup($m->content);
 
     $m->follow_link_ok({text => 'Products'});
     $m->title_like(qr/products/i);
+    $self->validate_markup($m->content);
     $m->follow_link_ok({text => 'tag1'});
+    $self->validate_markup($m->content);
     {
         local $SIG{__WARN__} = sub {};
         $m->submit_form_ok({
-            form_name => 'cart_add',
+            form_id => 'cart_add_1',
             fields    => {
                 sku => 'ABC-123',
                 quantity => 2
             }
         });
     };
+    $self->validate_markup($m->content);
     $m->follow_link_ok({text => 'Products'});
     $m->title_like(qr/products/i);
+    $self->validate_markup($m->content);
     $m->follow_link_ok({text => 'tag2'});
+    $self->validate_markup($m->content);
     {
         local $SIG{__WARN__} = sub {};
         $m->submit_form_ok({
-            form_name => 'cart_add',
+            form_id => 'cart_add_2',
             fields    => {
                 sku => 'DEF-345',
                 quantity => 1
             }
         });
     };
+    $self->validate_markup($m->content);
     $m->title_like(qr/cart/i);
     $m->content_contains('<td align="left">ABC-123</td>');
     $m->content_contains('<td align="left">ABC Product Description</td>');
@@ -89,8 +96,9 @@ sub tests : Test(204) {
 
     ## login
     $m->follow_link_ok({text => 'Login'});
+    $self->validate_markup($m->content);
     $m->submit_form_ok({
-        form_name => 'login',
+        form_id => 'login',
         fields    => {
             username => 'admin',
             password => 'admin'
@@ -98,17 +106,21 @@ sub tests : Test(204) {
     });
     $m->title_like(qr/login/i);
     $m->content_like(qr/login successful/i);
+    $self->validate_markup($m->content);
 
 
     ## save cart
     $m->follow_link_ok({text => 'Cart'});
+    $self->validate_markup($m->content);
     $m->title_like(qr/cart/i);
     $m->submit_form_ok({
-        form_name => 'cart_save',
+        form_id => 'cart_save',
         fields => {
             name => 'My New Wishlist',
         }
     });
+    $self->validate_markup($m->content);
+
 
     ## list wishlists
     $m->title_like(qr/wishlists/i);
@@ -129,18 +141,20 @@ sub tests : Test(204) {
     $m->content_contains('<td align="left">DEF Product Description</td>');
     $m->content_contains('<td align="right">$10.00</td>');
     $m->content_contains('<td align="right">$12.46</td>');
+    $self->validate_markup($m->content);
 
 
     ## update item
     {
         local $SIG{__WARN__} = sub {};
         $m->submit_form_ok({
-            form_name => 'wishlists_items_update',
+            form_id => 'wishlists_items_update_1',
             fields    => {
                 quantity => 3
             }
         });
     };
+    $self->validate_markup($m->content);
     $m->title_like(qr/My New Wishlist/i);
     $m->content_contains('My New Wishlist');
     $m->content_contains('<td align="left">ABC-123</td>');
@@ -157,12 +171,13 @@ sub tests : Test(204) {
     {
         local $SIG{__WARN__} = sub {};
         $m->submit_form_ok({
-            form_name => 'wishlists_items_update',
+            form_id => 'wishlists_items_update_1',
             fields    => {
                 quantity => 'a'
             }
         });
     };
+    $self->validate_markup($m->content);
     $m->title_like(qr/My New Wishlist/i);
     $m->content_like(qr/quantity must be.*number/i);
     $m->content_contains('<td align="left">ABC-123</td>');
@@ -179,9 +194,10 @@ sub tests : Test(204) {
     {
         local $SIG{__WARN__} = sub {};
         $m->submit_form_ok({
-            form_name => 'wishlists_items_delete',
+            form_id => 'wishlists_items_delete_1',
         });
     };
+    $self->validate_markup($m->content);
     $m->title_like(qr/My New Wishlist/i);
     $m->content_contains('My New Wishlist');
     $m->content_lacks('<td align="left">ABC-123</td>');
@@ -195,14 +211,16 @@ sub tests : Test(204) {
 
     ## edit wishlist
     $m->follow_link_ok({text => 'Edit'});
+    $self->validate_markup($m->content);
     $m->content_contains('Editing My New Wishlist');
     $m->submit_form_ok({
-        form_name => 'wishlists_edit',
+        form_id => 'wishlists_edit',
         fields    => {
             name => 'My Updated Wishlist',
             description => 'My Updated Description'
         }
     });
+    $self->validate_markup($m->content);
     $m->title_like(qr/My Updated Wishlist/i);
     $m->content_contains('My Updated Wishlist');
     $m->content_contains('My Updated Description');
@@ -215,9 +233,10 @@ sub tests : Test(204) {
     {
         local $SIG{__WARN__} = sub {};
         $m->submit_form_ok({
-            form_name => 'wishlists_clear',
+            form_id => 'wishlists_clear',
         });
     };
+    $self->validate_markup($m->content);
     $m->title_like(qr/My Updated Wishlist/i);
     $m->content_contains('My Updated Wishlist');
     $m->content_like(qr/wishlist is empty/i);
@@ -234,9 +253,10 @@ sub tests : Test(204) {
     {
         local $SIG{__WARN__} = sub {};
         $m->submit_form_ok({
-            form_name => 'wishlists_delete',
+            form_id => 'wishlists_delete',
         });
     };
+    $self->validate_markup($m->content);
     $m->title_like(qr/wishlists/i);
     $m->content_lacks('My Updated Wishlist');
     $m->content_lacks('My Updated Description');
@@ -245,49 +265,58 @@ sub tests : Test(204) {
 
     ## restore wishlist into cart: append=3
     $m->follow_link_ok({text => 'Cart'});
+    $self->validate_markup($m->content);
     $m->title_like(qr/cart/i);
     $m->content_like(qr/cart is empty/i);
     $m->follow_link_ok({text => 'Products'});
+    $self->validate_markup($m->content);
     $m->title_like(qr/products/i);
     $m->follow_link_ok({text => 'tag1'});
+    $self->validate_markup($m->content);
     {
         local $SIG{__WARN__} = sub {};
         $m->submit_form_ok({
-            form_name => 'cart_add',
+            form_id => 'cart_add_1',
             fields    => {
                 sku => 'ABC-123',
                 quantity => 1
             }
         });
     };
+    $self->validate_markup($m->content);
     $m->title_like(qr/cart/i);
     $m->content_contains('<td align="left">ABC-123</td>');
     $m->content_contains('<td align="left">ABC Product Description</td>');
     $m->content_contains('<td align="right">$1.23</td>');
     $m->submit_form_ok({
-        form_name => 'cart_save',
+        form_id => 'cart_save',
         fields => {
             name => 'My New Wishlist',
         }
     });
+    $self->validate_markup($m->content);
     $m->follow_link_ok({text => 'My New Wishlist'});
+    $self->validate_markup($m->content);
     $m->title_like(qr/My New Wishlist/i);
     $m->content_contains('<td align="left">ABC-123</td>');
     $m->content_contains('<td align="left">ABC Product Description</td>');
     $m->content_contains('<td align="right">$1.23</td>');
     $m->follow_link_ok({text => 'Products'});
+    $self->validate_markup($m->content);
     $m->title_like(qr/products/i);
     $m->follow_link_ok({text => 'tag2'});
+    $self->validate_markup($m->content);
     {
         local $SIG{__WARN__} = sub {};
         $m->submit_form_ok({
-            form_name => 'cart_add',
+            form_id => 'cart_add_2',
             fields    => {
                 sku => 'DEF-345',
                 quantity => 1
             }
         });
     };
+    $self->validate_markup($m->content);
     $m->title_like(qr/cart/i);
     $m->content_lacks('<td align="left">ABC-123</td>');
     $m->content_lacks('<td align="left">ABC Product Description</td>');
@@ -296,14 +325,17 @@ sub tests : Test(204) {
     $m->content_contains('<td align="left">DEF Product Description</td>');
     $m->content_contains('<td align="right">$10.00</td>');
     $m->follow_link_ok({text => 'Wishlists'});
+    $self->validate_markup($m->content);
     $m->follow_link_ok({text => 'My New Wishlist'});
+    $self->validate_markup($m->content);
     $m->title_like(qr/My New Wishlist/i);
     $m->submit_form_ok({
-        form_name => 'wishlists_restore',
+        form_id => 'wishlists_restore',
         fields    => {
             mode => 3
         }
     });
+    $self->validate_markup($m->content);
     $m->title_like(qr/cart/i);
     $m->content_contains('<td align="left">ABC-123</td>');
     $m->content_contains('<td align="left">ABC Product Description</td>');
@@ -315,9 +347,10 @@ sub tests : Test(204) {
     {
         local $SIG{__WARN__} = sub {};
         $m->submit_form_ok({
-            form_name => 'cart_clear'
+            form_id => 'cart_clear'
         });
     };
+    $self->validate_markup($m->content);
     $m->title_like(qr/cart/i);
     $m->content_lacks('<td align="left">ABC-123</td>');
     $m->content_lacks('<td align="left">ABC Product Description</td>');
@@ -331,34 +364,41 @@ sub tests : Test(204) {
 
     ## restore wishlist into cart: merge=2
     $m->follow_link_ok({text => 'Cart'});
+    $self->validate_markup($m->content);
     $m->title_like(qr/cart/i);
     $m->content_like(qr/cart is empty/i);
     $m->follow_link_ok({text => 'Products'});
+    $self->validate_markup($m->content);
     $m->title_like(qr/products/i);
     $m->follow_link_ok({text => 'tag1'});
+    $self->validate_markup($m->content);
     {
         local $SIG{__WARN__} = sub {};
         $m->submit_form_ok({
-            form_name => 'cart_add',
+            form_id => 'cart_add_1',
             fields    => {
                 sku => 'ABC-123',
                 quantity => 1
             }
         });
     };
+    $self->validate_markup($m->content);
     $m->title_like(qr/cart/i);
     $m->content_contains('<td align="left">ABC-123</td>');
     $m->content_contains('<td align="left">ABC Product Description</td>');
     $m->content_contains('<td align="right">$1.23</td>');
     $m->follow_link_ok({text => 'Wishlists'});
+    $self->validate_markup($m->content);
     $m->follow_link_ok({text => 'My New Wishlist'});
+    $self->validate_markup($m->content);
     $m->title_like(qr/My New Wishlist/i);
     $m->submit_form_ok({
-        form_name => 'wishlists_restore',
+        form_id => 'wishlists_restore',
         fields    => {
             mode => 2
         }
     });
+    $self->validate_markup($m->content);
     $m->title_like(qr/cart/i);
     $m->content_contains('<td align="left">ABC-123</td>');
     $m->content_contains('<td align="left">ABC Product Description</td>');
@@ -367,9 +407,10 @@ sub tests : Test(204) {
     {
         local $SIG{__WARN__} = sub {};
         $m->submit_form_ok({
-            form_name => 'cart_clear'
+            form_id => 'cart_clear'
         });
     };
+    $self->validate_markup($m->content);
     $m->title_like(qr/cart/i);
     $m->content_lacks('<td align="left">ABC-123</td>');
     $m->content_lacks('<td align="left">ABC Product Description</td>');
@@ -380,34 +421,41 @@ sub tests : Test(204) {
 
     ## restore wishlist into cart: replace=1
     $m->follow_link_ok({text => 'Cart'});
+    $self->validate_markup($m->content);
     $m->title_like(qr/cart/i);
     $m->content_like(qr/cart is empty/i);
     $m->follow_link_ok({text => 'Products'});
+    $self->validate_markup($m->content);
     $m->title_like(qr/products/i);
     $m->follow_link_ok({text => 'tag2'});
+    $self->validate_markup($m->content);
     {
         local $SIG{__WARN__} = sub {};
         $m->submit_form_ok({
-            form_name => 'cart_add',
+            form_id => 'cart_add_2',
             fields    => {
                 sku => 'DEF-345',
                 quantity => 1
             }
         });
     };
+    $self->validate_markup($m->content);
     $m->title_like(qr/cart/i);
     $m->content_contains('<td align="left">DEF-345</td>');
     $m->content_contains('<td align="left">DEF Product Description</td>');
     $m->content_contains('<td align="right">$10.00</td>');
     $m->follow_link_ok({text => 'Wishlists'});
+    $self->validate_markup($m->content);
     $m->follow_link_ok({text => 'My New Wishlist'});
+    $self->validate_markup($m->content);
     $m->title_like(qr/My New Wishlist/i);
     $m->submit_form_ok({
-        form_name => 'wishlists_restore',
+        form_id => 'wishlists_restore',
         fields    => {
             mode => 1
         }
     });
+    $self->validate_markup($m->content);
     $m->title_like(qr/cart/i);
     $m->content_contains('<td align="left">ABC-123</td>');
     $m->content_contains('<td align="left">ABC Product Description</td>');
@@ -418,9 +466,10 @@ sub tests : Test(204) {
     {
         local $SIG{__WARN__} = sub {};
         $m->submit_form_ok({
-            form_name => 'cart_clear'
+            form_id => 'cart_clear'
         });
     };
+    $self->validate_markup($m->content);
     $m->title_like(qr/cart/i);
     $m->content_lacks('<td align="left">ABC-123</td>');
     $m->content_lacks('<td align="left">ABC Product Description</td>');
@@ -429,7 +478,7 @@ sub tests : Test(204) {
     $m->content_like(qr/cart is empty/i);
 };
 
-sub tests_not_found : Test(1) {
+sub tests_not_found : Test(2) {
     my $self = shift;
     my $m = $self->client;
 
@@ -440,14 +489,16 @@ sub tests_not_found : Test(1) {
     } else {
         is( $m->status, 404 );
     }
+    $self->validate_markup($m->content);
 }
 
-sub tests_unauthorized: Test(1) {
+sub tests_unauthorized: Test(2) {
     my $self = shift;
     my $m = $self->client;
 
     $m->get('http://localhost/' . $self->path . '/');
     is( $m->status, 401 );
+    $self->validate_markup($m->content);
 }
 
 1;

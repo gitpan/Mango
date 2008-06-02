@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Plugin/Application.pm 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Plugin/Application.pm 1644 2008-06-02T01:46:53.055259Z claco  $
 package Mango::Catalyst::Plugin::Application;
 use strict;
 use warnings;
@@ -10,6 +10,8 @@ BEGIN {
       Mango::Catalyst::Plugin::I18N
       Mango::Catalyst::Plugin::Forms
       /;
+
+    use URI ();
 }
 
 sub register_resource {
@@ -39,6 +41,33 @@ sub uri_for_resource {
     return $self->uri_for( $action, @args );
 }
 
+sub redirect_to_login {
+    my $self = shift;
+
+    $self->session->{'__mango_return_url'} = $self->request->uri->path_query;
+    $self->response->redirect(
+        $self->uri_for_resource( 'mango/login', 'login' ) . '/' );
+
+    return;
+}
+
+sub redirect_from_login {
+    my $self = shift;
+
+    if ( $self->sessionid ) {
+        my $url = $self->session->{'__mango_return_url'};
+
+        if ($url) {
+            my $uri = URI->new($url);
+            delete $self->session->{'__mango_return_url'};
+
+            $self->response->redirect( $uri->path_query );
+        }
+    }
+
+    return;
+}
+
 1;
 __END__
 
@@ -61,6 +90,15 @@ Mango::Catalyst::Plugin::Application loads all Mango related plugins into a
 Catalyst application.
 
 =head1 METHODS
+
+=head2 redirect_to_login
+
+Redirects the user to the current login page, storing the current pages
+uri to return to using C<redirect_from_login>.
+
+=head2 redirect_from_login
+
+Redirects the user back to the page they were visiting before having to login.
 
 =head2 register_resource
 

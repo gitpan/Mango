@@ -1,9 +1,9 @@
-# $Id$
+# $Id: /local/CPAN/Mango/share/forms/checkout/checkout.yml 1644 2008-06-02T01:46:53.055259Z claco  $
 ---
 id: checkout
-name: checkout
-method: POST
+method: post
+auto_fieldset: 1
 javascript: 0
 stylesheet: 1
-sticky: 1
+sticky: 0
 submit: BUTTON_LABEL_CHECKOUT

@@ -1,5 +1,5 @@
 ## no critic (RequirePodAtEnd)
-# $Id: /local/CPAN/Mango/lib/Catalyst/Helper/Mango.pm 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/lib/Catalyst/Helper/Mango.pm 1644 2008-06-02T01:46:53.055259Z claco  $
 package Catalyst::Helper::Mango;
 use strict;
 use warnings;
@@ -110,6 +110,9 @@ sub mk_all {
     $self->mk_views;
     $self->mk_controllers;
 
+    ## add checkout
+    $self->mk_checkout;
+
     return;
 }
 
@@ -152,6 +155,7 @@ sub mk_database {
                 user_id    => 1,
                 first_name => 'Admin',
                 last_name  => 'User',
+                email      => 'webmaster@example.com',
                 created    => DateTime->now,
                 updated    => DateTime->now
             }
@@ -236,6 +240,7 @@ sub mk_config {
     $config->{'authorization'}->{'mango'}->{'admin_role'} =
       $self->{'adminrole'};
     $config->{'cache'}->{'backend'}->{'store'} = 'Memory';
+    $config->{'email'} = 'webmaster@example.com';
 
     YAML::DumpFile( $file, $config );
 
@@ -336,6 +341,21 @@ sub mk_controllers {
 
     ## rest
     $self->mk_dir( dir( $c, 'REST' ) );
+
+    return;
+}
+
+=head2 mk_checkout
+
+Adds the necessary checkout directories.
+
+=cut
+
+sub mk_checkout {
+    my $self = shift;
+    my $mod  = $self->{'mod'};
+
+    $self->mk_dir( dir( $mod, 'Checkout', 'Plugins' ) );
 
     return;
 }

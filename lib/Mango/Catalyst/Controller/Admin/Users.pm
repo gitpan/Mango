@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Admin/Users.pm 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Admin/Users.pm 1644 2008-06-02T01:46:53.055259Z claco  $
 package Mango::Catalyst::Controller::Admin::Users;
 use strict;
 use warnings;
@@ -16,7 +16,7 @@ BEGIN {
     );
 }
 
-sub index : Template('admin/users/index') {
+sub list : Chained('/') PathPrefix Args(0) Template('admin/users/list') {
     my ( $self, $c ) = @_;
     my $page = $c->request->param('page') || 1;
     my $users = $c->model('Users')->search(
@@ -34,7 +34,7 @@ sub index : Template('admin/users/index') {
     return;
 }
 
-sub load : Chained('/') PathPrefix CaptureArgs(1) {
+sub instance : Chained('/') PathPrefix CaptureArgs(1) {
     my ( $self, $c, $id ) = @_;
     my $user = $c->model('Users')->get_by_id($id);
 
@@ -67,6 +67,13 @@ sub create : Local Template('admin/users/create') {
               ->search( { username => $form->field('username') } )->count;
         }
     );
+    $form->unique(
+        'email',
+        sub {
+            return !$c->model('Profiles')
+              ->search( { email => $form->field('email') } )->count;
+        }
+    );
 
     if ( $self->submitted && $self->validate->success ) {
         my $user = $c->model('Users')->create(
@@ -80,7 +87,8 @@ sub create : Local Template('admin/users/create') {
             {
                 user_id    => $user->id,
                 first_name => $form->field('first_name'),
-                last_name  => $form->field('last_name')
+                last_name  => $form->field('last_name'),
+                email      => $form->field('email')
             }
         );
 
@@ -95,7 +103,7 @@ sub create : Local Template('admin/users/create') {
     return;
 }
 
-sub edit : Chained('load') PathPart Args(0) Template('admin/users/edit') {
+sub edit : Chained('instance') PathPart Args(0) Template('admin/users/edit') {
     my ( $self, $c ) = @_;
     my $user       = $c->stash->{'user'};
     my $profile    = $c->stash->{'profile'};
@@ -104,7 +112,23 @@ sub edit : Chained('load') PathPart Args(0) Template('admin/users/edit') {
     my $form       = $self->form;
 
     $form->field( 'roles',
-        options => [ map { [ $_->id, $_->name ] } @roles ] );
+        options => [ map { [ $_->id, $_->description ] } @roles ] );
+
+    $form->unique(
+        'email',
+        sub {
+            my $existing =
+              $c->model('Profiles')
+              ->search( { email => $form->field('email') } )->first;
+
+            if ( $existing && $existing->id != $profile->id ) {
+                return;
+            } else {
+                return 1;
+            }
+        }
+    );
+
     $form->values(
         {
             id               => $user->id,
@@ -115,6 +139,7 @@ sub edit : Chained('load') PathPart Args(0) Template('admin/users/edit') {
             updated          => $user->updated . '',
             first_name       => $profile->first_name,
             last_name        => $profile->last_name,
+            email            => $profile->email,
 
             ## for some reason FB is wonky about no selected multiples compared to values
             ## yet it get's empty fields correct against non multiple values
@@ -141,6 +166,7 @@ sub edit : Chained('load') PathPart Args(0) Template('admin/users/edit') {
 
         $profile->first_name( $form->field('first_name') );
         $profile->last_name( $form->field('last_name') );
+        $profile->email( $form->field('email') );
         $profile->update;
 
         if ( $deleted_roles->size ) {
@@ -159,7 +185,8 @@ sub edit : Chained('load') PathPart Args(0) Template('admin/users/edit') {
     return;
 }
 
-sub delete : Chained('load') PathPart Args(0) Template('admin/users/delete') {
+sub delete : Chained('instance') PathPart Args(0)
+  Template('admin/users/delete') {
     my ( $self, $c ) = @_;
     my $form = $self->form;
     my $user = $c->stash->{'user'};
@@ -187,7 +214,7 @@ sub delete : Chained('load') PathPart Args(0) Template('admin/users/delete') {
             $user->destroy;
 
             $c->res->redirect(
-                $c->uri_for( $self->action_for('index') ) . '/' );
+                $c->uri_for( $self->action_for('list') ) . '/' );
         } else {
             $c->stash->{'errors'} = ['ID_MISTMATCH'];
         }
@@ -215,7 +242,7 @@ used to edit user accounts.
 
 =head1 ACTIONS
 
-=head2 index : /admin/users/
+=head2 list : /admin/users/
 
 Displays the list of users.
 
@@ -231,7 +258,7 @@ Deletes the specified user.
 
 Updates the specified user.
 
-=head2 load : /admin/users/<id>/
+=head2 instance : /admin/users/<id>/
 
 Loads a specific user.
 

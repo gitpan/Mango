@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Schema/Profile.pm 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Schema/Profile.pm 1644 2008-06-02T01:46:53.055259Z claco  $
 package Mango::Schema::Profile;
 use strict;
 use warnings;
@@ -42,6 +42,11 @@ __PACKAGE__->add_columns(
         size        => 25,
         is_nullable => 1
     },
+    email => {
+        data_type   => 'VARCHAR',
+        size        => 150,
+        is_nullable => 1
+    },
     created => {
         data_type   => 'DATETIME',
         is_nullable => 0,
@@ -55,6 +60,7 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key('id');
 __PACKAGE__->add_unique_constraint( user_id => [qw/user_id/] );
+__PACKAGE__->add_unique_constraint( email   => [qw/email/] );
 __PACKAGE__->belongs_to(
     user => 'Mango::Schema::User',
     { 'foreign.id' => 'self.user_id' }

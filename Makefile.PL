@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/Makefile.PL 1584 2008-05-13T01:34:22.553769Z claco  $
+# $Id: /local/CPAN/Mango/Makefile.PL 1644 2008-06-02T01:46:53.055259Z claco  $
 use strict;
 use warnings;
 use inc::Module::Install 0.65;
@@ -27,13 +27,14 @@ requires 'Catalyst::View::TT';
 requires 'CGI::FormBuilder';
 requires 'Class::Accessor::Grouped' => '0.06000';
 requires 'Class::Inspector';
+requires 'Class::Workflow';
 requires 'Clone' => '0.27';
 requires 'DateTime';
 requires 'DBIx::Class' => '0.08008';
 requires 'Error';
 requires 'File::ShareDir';
 requires 'FormValidator::Simple' => '0.17';
-requires 'Handel' => '1.00009';
+requires 'Handel' => '1.00011';
 requires 'HTML::TagCloud::Sortable';
 requires 'I18N::LangTags';
 requires 'I18N::LangTags::Detect';
@@ -45,7 +46,7 @@ requires 'Path::Class';
 requires 'Scalar::Util';
 requires 'Set::Scalar';
 requires 'SQL::Translator' => '0.08';
-requires 'Test::WWW::Mechanize::Catalyst';
+requires 'URI';
 requires 'XML::Atom' => '0.27';
 requires 'XML::Feed' => '0.12';
 requires 'XML::RSS' => '1.31';
@@ -55,6 +56,7 @@ build_requires 'Directory::Scratch';
 
 test_requires 'Test::Class';
 test_requires 'Test::More';
+test_requires 'Test::WWW::Mechanize::Catalyst';
 
 catalyst;
 

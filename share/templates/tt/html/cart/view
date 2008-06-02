@@ -1,5 +1,5 @@
 [% USE HTML %]
-[% page.title = c.localize('PAGE_TITLE_CART') %]
+[% page.title = c.localize('PAGE_TITLE_CART'), page.id = 'cart' %]
 [% INCLUDE includes/errors %]
 
 [% IF cart.count %]
@@ -31,14 +31,13 @@
 		[% SET form = c.forms('cart_items_delete') %]
 		[% CALL form.id(form.id _ '_' _ item.id) %]
 		[% form.render(
-			'action', c.uri_for_resource('mango/cart/items', 'delete', [item.id]) _ '/',
-			'values', [item.id, item.quantity]
+			'action', c.uri_for_resource('mango/cart/items', 'delete', [item.id]) _ '/'
 		) %]
 	</td>
         </tr>
 	[% END %]
         <tr>
-            <td colspan="7" height="20"></td>
+            <td colspan="7"></td>
         </tr>
         <tr>
             <th colspan="4" align="right">[% c.localize('LABEL_SUBTOTAL') %]:</th>

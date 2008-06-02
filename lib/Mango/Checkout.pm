@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Checkout.pm 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Checkout.pm 1644 2008-06-02T01:46:53.055259Z claco  $
 package Mango::Checkout;
 use strict;
 use warnings;
@@ -6,6 +6,8 @@ use warnings;
 BEGIN {
     use base qw/Handel::Checkout/;
 }
+
+__PACKAGE__->stash_class('Mango::Checkout::Stash');
 
 1;
 __END__
@@ -16,7 +18,19 @@ Mango::Checkout - Mango class to handle checkout/order processing
 
 =head1 SYNOPSIS
 
+    my $checkout = Mango::Checkout->new({
+        order => $order
+    });
+    $checkout->process;
+
 =head1 DESCRIPTION
+
+Mango::Checkout loads the specified plugins and routes an order through each
+plugin to perform work upon it.
+
+=head1 SEE ALSO
+
+L<Handel::Checkout>
 
 =head1 AUTHOR
 

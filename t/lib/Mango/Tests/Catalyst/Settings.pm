@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/t/lib/Mango/Tests/Catalyst/Settings.pm 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/t/lib/Mango/Tests/Catalyst/Settings.pm 1644 2008-06-02T01:46:53.055259Z claco  $
 package Mango::Tests::Catalyst::Settings;
 use strict;
 use warnings;
@@ -10,24 +10,62 @@ BEGIN {
     use Path::Class ();
 }
 
+sub startup : Test(startup => +2) {
+    my $self = shift;
+    $self->SUPER::startup(@_);
+
+    use_ok('Mango::Provider::Users');
+    use_ok('Mango::Provider::Profiles');
+
+
+    my $provider = Mango::Provider::Users->new(
+        {
+            connection_info => [
+                'dbi:SQLite:'
+                  . Path::Class::file( $self->application, 'data', 'mango.db' )
+            ]
+        }
+    );
+    $provider->create({
+        id => 2,
+        username => 'claco',
+        password => 'foo'
+    });
+
+    $provider = Mango::Provider::Profiles->new(
+        {
+            connection_info => [
+                'dbi:SQLite:'
+                  . Path::Class::file( $self->application, 'data', 'mango.db' )
+            ]
+        }
+    );
+    $provider->create({
+        user_id => 2,
+        email => 'existing@example.com'
+    });
+}
+
 sub path {'settings'};
 
-sub tests : Test(31) {
+sub tests : Test(47) {
     my $self = shift;
     my $m = $self->client;
 
     ## not logged in
     $m->get_ok('http://localhost/');
+    $self->validate_markup($m->content);
     $m->follow_link_ok({text => 'Login'});
     $m->title_like(qr/login/i);
     $m->content_unlike(qr/already logged in/i);
     $m->content_unlike(qr/welcome anonymous/i);
     ok(! $m->find_link(text => 'Logout'));
     ok(! $m->find_link(text => 'Profile'));
+    $self->validate_markup($m->content);
 
     ## login
     $m->submit_form_ok({
-        form_name => 'login',
+        form_id => 'login',
         fields    => {
             username => 'admin',
             password => 'admin'
@@ -38,14 +76,36 @@ sub tests : Test(31) {
     $m->content_like(qr/welcome admin/i);
     ok(! $m->find_link(text => 'Login'));
     ok($m->find_link(text => 'Logout'));
+    $self->validate_markup($m->content);
+
+
+    ## edit profile fails for existing email
+    $m->follow_link_ok({text => 'Profile'});
+    is($m->uri->path, '/' . $self->path . '/profile/');
+    $m->title_like(qr/profile/i);
+    $self->validate_markup($m->content);
+    $m->submit_form_ok({
+        form_id => 'settings_profile',
+        fields    => {
+            password => 'admin',
+            confirm_password => 'admin',
+            first_name => 'Administration',
+            last_name => 'User',
+            email => 'existing@example.com'
+        }
+    });
+    $m->title_like(qr/profile/i);
+    $m->content_contains('<li>CONSTRAINT_EMAIL_UNIQUE</li>');
+    $self->validate_markup($m->content);
 
 
     ## edit profile
     $m->follow_link_ok({text => 'Profile'});
     is($m->uri->path, '/' . $self->path . '/profile/');
     $m->title_like(qr/profile/i);
+    $self->validate_markup($m->content);
     $m->submit_form_ok({
-        form_name => 'settings_profile',
+        form_id => 'settings_profile',
         fields    => {
             password => 'admin',
             confirm_password => 'admin',
@@ -55,6 +115,7 @@ sub tests : Test(31) {
     });
     $m->title_like(qr/profile/i);
     $m->content_like(qr/welcome administration/i);
+    $self->validate_markup($m->content);
 
 
     ## logout
@@ -63,11 +124,13 @@ sub tests : Test(31) {
     $m->content_unlike(qr/welcome administration/i);
     ok($m->find_link(text => 'Login'));
     ok(! $m->find_link(text => 'Logout'));
+    $self->validate_markup($m->content);
 
     ## login again
     $m->follow_link_ok({text => 'Login'});
+    $self->validate_markup($m->content);
     $m->submit_form_ok({
-        form_name => 'login',
+        form_id => 'login',
         fields    => {
             username => 'admin',
             password => 'admin'
@@ -78,6 +141,7 @@ sub tests : Test(31) {
     $m->content_like(qr/welcome administration/i);
     ok(! $m->find_link(text => 'Login'));
     ok($m->find_link(text => 'Logout'));
+    $self->validate_markup($m->content);
 };
 
 1;

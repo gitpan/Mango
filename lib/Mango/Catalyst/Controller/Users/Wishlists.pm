@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Users/Wishlists.pm 1580 2008-05-13T00:45:03.642263Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Users/Wishlists.pm 1644 2008-06-02T01:46:53.055259Z claco  $
 package Mango::Catalyst::Controller::Users::Wishlists;
 use strict;
 use warnings;
@@ -38,25 +38,36 @@ sub list : Chained('../instance') PathPart('wishlists') Args(0) Feed('Atom')
     if ( $self->wants_feed ) {
         $self->entity(
             {
+                id => $c->uri_for_resource( 'mango/users/wishlists', 'list',
+                    [ $user->username ] )
+                  . '/',
                 title => $profile->full_name . '\'s Wishlists',
                 link => $c->uri_for_resource( 'mango/users/wishlists', 'list',
                     [ $user->username ] )
                   . '/',
+                author => $profile->email . ' ('
+                  . ( $profile->full_name || $user->username ) . ')',
                 modified => $wishlists->first
                 ? $wishlists->first->updated
                 : DateTime->now,
                 entries => [
                     map {
                         {
-                            id     => $_->id,
-                            author => $profile->full_name || $user->username,
-                            title  => $_->name,
-                            link   => $c->uri_for_resource(
+                            id => $c->uri_for_resource(
                                 'mango/users/wishlists', 'view',
                                 [ $user->username, $_->id ]
                               )
                               . '/',
-                            content => $_->description
+                            author => $profile->email . ' ('
+                              . ( $profile->full_name || $user->username )
+                              . ')',
+                            title => $_->name,
+                            link  => $c->uri_for_resource(
+                                'mango/users/wishlists', 'view',
+                                [ $user->username, $_->id ]
+                              )
+                              . '/',
+                            summary => $_->description
                               || 'No description available.',
                             content => $c->view('HTML')->render(
                                 $c,
@@ -111,6 +122,11 @@ sub view : Chained('instance') PathPart('') Args(0) Feed('Atom') Feed('RSS')
           $c->model('Profiles')->search( { user => $user } )->first;
         $self->entity(
             {
+                id => $c->uri_for_resource(
+                    'mango/users/wishlists', 'view',
+                    [ $user->username, $wishlist->id ]
+                  )
+                  . '/',
                 title => $profile->full_name
                   . '\'s Wishlists: '
                   . $wishlist->name,
@@ -119,17 +135,26 @@ sub view : Chained('instance') PathPart('') Args(0) Feed('Atom') Feed('RSS')
                     [ $user->username, $wishlist->id ]
                   )
                   . '/',
+                author => $profile->email . ' ('
+                  . ( $profile->full_name || $user->username ) . ')',
                 modified => $wishlist->updated,
                 entries  => [
                     map {
                         {
-                            id     => $_->id,
-                            author => $profile->full_name || $user->username,
-                            title  => $_->sku,
+                            id =>
+                              $c->uri_for_resource( 'mango/products', 'view',
+                                [ $_->sku ] )
+                              . '/',
+                            author => $profile->email . ' ('
+                              . ( $profile->full_name || $user->username )
+                              . ')',
+                            title => $_->sku,
                             link =>
                               $c->uri_for_resource( 'mango/products', 'view',
                                 [ $_->sku ] )
                               . '/',
+                            summary => $_->description
+                              || 'No description available.',
                             content => $c->view('HTML')->render(
                                 $c,
                                 'users/wishlists/feed',

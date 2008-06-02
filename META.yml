@@ -7,6 +7,7 @@ build_requires:
   ExtUtils::MakeMaker: 6.11
   Test::Class: 0
   Test::More: 0
+  Test::WWW::Mechanize::Catalyst: 0
 distribution_type: module
 generated_by: 'Module::Install version 0.72'
 license: perl
@@ -39,6 +40,7 @@ requires:
   Catalyst::View::TT: 0
   Class::Accessor::Grouped: 0.06000
   Class::Inspector: 0
+  Class::Workflow: 0
   Clone: 0.27
   DBIx::Class: 0.08008
   DateTime: 0
@@ -46,7 +48,7 @@ requires:
   File::ShareDir: 0
   FormValidator::Simple: 0.17
   HTML::TagCloud::Sortable: 0
-  Handel: 1.00009
+  Handel: 1.00011
   I18N::LangTags: 0
   I18N::LangTags::Detect: 0
   List::MoreUtils: 0
@@ -57,11 +59,11 @@ requires:
   SQL::Translator: 0.08
   Scalar::Util: 0
   Set::Scalar: 0
-  Test::WWW::Mechanize::Catalyst: 0
+  URI: 0
   XML::Atom: 0.27
   XML::Feed: 0.12
   XML::RSS: 1.31
   YAML: 0
   perl: 5.8.1
 tests: 't/*.t t/*/*.t'
-version: 0.01000_12
+version: 0.01000_13

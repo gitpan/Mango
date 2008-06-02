@@ -1,5 +1,5 @@
 ## no critic (ProhibitPackageVars)
-# $Id: /local/CPAN/Mango/lib/Mango/I18N.pm 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/I18N.pm 1644 2008-06-02T01:46:53.055259Z claco  $
 package Mango::I18N;
 use strict;
 use warnings;
@@ -16,8 +16,11 @@ BEGIN {
 
 sub translate {
     my $handle = __PACKAGE__->get_handle;
+    my $text;
 
-    return $handle->maketext(@_);
+    eval { $text = $handle->maketext(@_); };
+
+    return defined $text ? $text : shift;
 }
 
 1;

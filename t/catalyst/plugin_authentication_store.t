@@ -1,5 +1,5 @@
 #!perl -w
-# $Id: /local/CPAN/Mango/t/catalyst/plugin_authentication_store.t 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/t/catalyst/plugin_authentication_store.t 1644 2008-06-02T01:46:53.055259Z claco  $
 use strict;
 use warnings;
 
@@ -281,6 +281,7 @@ is($store->config->{'cart_model'}, 'Carts');
             user_id => 1,
             first_name => 'First1',
             last_name => 'Last1',
+            email => 'email1@example.com',
             created => '2004-07-04T12:00:00',
             updated => '2004-07-04T12:00:00'
         }

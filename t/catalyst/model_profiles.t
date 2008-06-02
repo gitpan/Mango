@@ -1,5 +1,5 @@
 #!perl -w
-# $Id: /local/CPAN/Mango/t/catalyst/model_profiles.t 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/t/catalyst/model_profiles.t 1644 2008-06-02T01:46:53.055259Z claco  $
 use strict;
 use warnings;
 
@@ -35,7 +35,9 @@ BEGIN {
     ## create
     my $profile = $model->create({
         user => 22,
-        first_name => 'newprofile'
+        first_name => 'newprofile',
+        last_name => 'newlastname',
+        email => 'new@example.com'
     });
     isa_ok($profile, 'Mango::Profile');
     is($model->search->count, 3);

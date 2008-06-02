@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Login.pm 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Login.pm 1644 2008-06-02T01:46:53.055259Z claco  $
 package Mango::Catalyst::Controller::Login;
 use strict;
 use warnings;
@@ -34,6 +34,7 @@ sub login : Chained('/') PathPrefix Args(0) Form('login')
               )
             {
                 $c->stash->{'errors'} = [ $c->localize('LOGIN_SUCCEEDED') ];
+                $c->redirect_from_login;
             } else {
                 $c->stash->{'errors'} = [ $c->localize('LOGIN_FAILED') ];
             }
@@ -76,4 +77,3 @@ L<Mango::Catalyst::Plugin::Authentication>
     CPAN ID: CLACO
     claco@chrislaco.com
     http://today.icantfocus.com/blog/
-

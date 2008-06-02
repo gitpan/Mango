@@ -1,10 +1,10 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Root.pm 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Root.pm 1644 2008-06-02T01:46:53.055259Z claco  $
 package Mango::Catalyst::Controller::Root;
 use strict;
 use warnings;
 
 BEGIN {
-    use base qw/Catalyst::Controller/;
+    use base qw/Mango::Catalyst::Controller/;
 
     __PACKAGE__->config->{'namespace'} = '';
 }
@@ -15,10 +15,10 @@ sub index : Template('index') {
     return;
 }
 
-sub default : Template('errors/404') {
+sub default : Private {
     my ( $self, $c ) = @_;
 
-    $c->response->status(404);
+    $self->not_found;
 
     return;
 }

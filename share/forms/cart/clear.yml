@@ -1,8 +1,8 @@
-# $Id: /local/CPAN/Mango/share/forms/cart/clear.yml 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/share/forms/cart/clear.yml 1644 2008-06-02T01:46:53.055259Z claco  $
 ---
 id: cart_clear
-name: cart_clear
-method: POST
+method: post
+auto_fieldset: 1
 javascript: 0
 stylesheet: 1
 sticky: 0

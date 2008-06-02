@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Products.pm 1580 2008-05-13T00:45:03.642263Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller/Products.pm 1644 2008-06-02T01:46:53.055259Z claco  $
 package Mango::Catalyst::Controller::Products;
 use strict;
 use warnings;
@@ -8,6 +8,7 @@ BEGIN {
     use Mango                    ();
     use HTML::TagCloud::Sortable ();
     use Path::Class::Dir         ();
+    use DateTime                 ();
 
     __PACKAGE__->config(
         resource_name => 'mango/products',
@@ -79,20 +80,29 @@ sub tags : Local Template('products/list') Feed('Atom') Feed('RSS') {
     if ( $self->wants_feed ) {
         $self->entity(
             {
+                id => $c->uri_for_resource( 'mango/products', 'tags', @tags )
+                  . '/',
                 title => 'Products: ' . join( '. ', @tags ),
                 link =>
                   $c->uri_for_resource( 'mango/products', 'tags', @tags )
                   . '/',
-                entries => [
+                author => $c->config->{'email'} . ' ('
+                  . $c->config->{'name'} . ')',
+                modified => DateTime->now,
+                entries  => [
                     map {
                         {
-                            id    => $_->id,
+                            id =>
+                              $c->uri_for_resource( 'mango/products', 'view',
+                                [ $_->sku ] )
+                              . '/',
                             title => $_->name,
                             title => $_->sku,
                             link =>
                               $c->uri_for_resource( 'mango/products', 'view',
                                 [ $_->sku ] )
                               . '/',
+                            summary => $_->description,
                             content => $c->view('HTML')->render(
                                 $c,
                                 'products/feed',

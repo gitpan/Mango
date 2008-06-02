@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Form.pm 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Form.pm 1644 2008-06-02T01:46:53.055259Z claco  $
 package Mango::Form;
 use strict;
 use warnings;
@@ -10,9 +10,9 @@ BEGIN {
     use Mango::I18N ();
     use FormValidator::Simple 0.17 ();
     use FormValidator::Simple::Constants ();
-    use CGI::FormBuilder                 ();
-    use Clone                            ();
-    use YAML                             ();
+    use HTML::FormFu 0.02004 ();
+    use Clone ();
+    use YAML  ();
 
     __PACKAGE__->mk_group_accessors( 'simple',
         qw/labels messages profile validator _form localizer _unique _exists/
@@ -47,10 +47,10 @@ sub action {
     my ( $self, $action ) = @_;
 
     if ($action) {
-        $self->_form->{'action'} = "$action";
+        $self->_form->action("$action");
     }
 
-    return $self->_form->action;
+    return $self->_form->attributes->{'action'};
 }
 
 sub clone {
@@ -62,6 +62,7 @@ sub clone {
     $self->localizer(undef);
 
     my $form = Clone::clone($self);
+    $form->_form( $self->_form->clone );
 
     $self->params($params);
     $self->localizer($localizer);
@@ -71,8 +72,17 @@ sub clone {
 
 sub field {
     my $self = shift;
+    my ( $name, $option, $value ) = @_;
 
-    return $self->_form->field(@_);
+    if ($value) {
+        if ( ref $value eq 'ARRAY' ) {
+            $self->_form->get_field( { name => $name } )->options($value);
+        } else {
+            $self->_form->get_field( { name => $name } )->value($value);
+        }
+    }
+
+    return $self->_form->query->param(shift);
 }
 
 sub render {
@@ -80,35 +90,39 @@ sub render {
     my %args = @_;
     my $form = $self->_form;
 
-    ## CGI::FB Hates URI Objects
-    if ( exists $args{'action'} ) {
-        $args{'action'} = $args{'action'} . '';
+    foreach my $arg ( keys %args ) {
+        next if $arg =~ /values/i;
+        $self->$arg( $args{$arg} );
     }
 
-    foreach my $field ( $form->fields ) {
-        $field->label(
-            $self->localizer->(
-                $self->labels->{ $field->name },
-                $field->name
-            )
-        );
+    my $fields = $form->get_fields;
+    if ( my $values = $args{'values'} ) {
+        for ( my $i = 0 ; $i < scalar @{$values} ; $i++ ) {    ## no critic
+            if ( !$fields->[$i] ) {
+                next;
+            }
+
+            $fields->[$i]->value( $values->[$i] );
+        }
     }
-    $form->submit( $self->localizer->( $self->labels->{'submit'} ) );
 
-    ## keeps CGI::FB from bitching about empty basename
-    local $ENV{'SCRIPT_NAME'} ||= '';
-
-    return $form->render(%args);
+    $form->process;
+    return $form->render;
 }
 
 sub values {
     my ( $self, $values ) = @_;
 
     if ($values) {
-        $self->_form->values($values);
+        foreach my $field ( keys %{$values} ) {
+            $self->_form->get_field( { name => $field } )
+              ->value( $values->{$field} );
+        }
     }
 
-    return map { $_->name, ( $_->value || undef ) } $self->_form->fields;
+    return
+      map { $_->name, $self->_form->query->param( $_->name ) || undef }
+      @{ $self->_form->get_fields };
 }
 
 sub parse {
@@ -123,14 +137,25 @@ sub parse {
         Mango::Exception->throw('UNKNOWN_FORM_SOURCE');
     }
 
-    my $fields = delete $config->{'fields'};
-    $self->_form( CGI::FormBuilder->new( %{$config} ) );
+    my $submit    = delete $config->{'submit'} || 'BUTTON_LABEL_SUBMIT';
+    my $fields    = delete $config->{'fields'};
+    my $indicator = '_submitted_'
+      . ( $config->{'id'} || $config->{'name'} || 'noidorname' );
+    push @{$fields}, { $indicator => { type => 'Hidden', value => 1 } };
+    push @{$fields}, { '_submit'  => { type => 'Submit', value => $submit } };
+    $config->{'indicator'} = $indicator;
+
+    delete $config->{'sticky'};
+    delete $config->{'stylesheet'};
+    delete $config->{'javascript'};
+
+    if ( exists $config->{'name'} ) {
+        $config->{'attributes'}->{'name'} = delete $config->{'name'};
+    }
+    $self->_form( HTML::FormFu->new($config) );
     $self->_parse_fields($fields);
 
-    if ( !$config->{'submit'} ) {
-        $self->_form->submit('BUTTON_LABEL_SUBMIT');
-    }
-    $self->labels->{'submit'} = $config->{'submit'} || 'BUTTON_LABEL_SUBMIT';
+    #$self->labels->{'submit'} = $config->{'submit'} || 'BUTTON_LABEL_SUBMIT';
 
     $self->validator->set_messages( { '.' => $self->messages } );
 
@@ -146,14 +171,58 @@ sub _parse_fields {
         my $constraints = delete $field->{'constraints'};
         my $errors      = delete $field->{'messages'};
 
-        $self->labels->{$name} = $label;
+        ## transform types
+        my $type = delete $field->{'type'};
+        $type ||= 'Text';
+        $type =~ s/text/Text/i;
+        $type =~ s/hidden/Hidden/i;
+        $type =~ s/password/Password/i;
+        $type =~ s/select/Select/i;
+        $type =~ s/checkbox/Checkbox/i;
 
-        $self->_form->field(
-            name  => $name,
-            label => $label,
-            %{$field}
+        if (   $type eq 'Checkbox'
+            && exists $field->{'multiple'}
+            && $field->{'multiple'} )
+        {
+            $type = 'Checkboxgroup';
+        }
+        if ( $type ne 'Submit' ) {
+            if (   !exists $field->{'label'}
+                && !exists $field->{'label_loc'}
+                && !exists $field->{'label_xml'} )
+            {
+                $field->{'label_loc'} = $label;
+            }
+        }
+
+        ## migrate disabled
+        $field->{'force_default'}  = delete $field->{'force'};
+        $field->{'retain_default'} = $field->{'force_default'};
+        if ( exists $field->{'disabled'} ) {
+            $field->{'attributes'}->{'disabled'} =
+              delete $field->{'disabled'};
+        }
+
+        ## migrate options/option labels
+        my $options = delete $field->{'options'};
+        my $labels  = delete $field->{'labels'};
+
+        if ($options) {
+            $field->{'options'} =
+              [ map { [ $_ => $labels->{$_} ] } @{$options} ];
+        }
+
+        ## delete unknowns
+        delete $field->{'selectname'};
+        delete $field->{'multiple'};
+
+        $self->_form->element(
+            {
+                name => $name,
+                type => $type,
+                %{$field}
+            }
         );
-
         $self->_parse_constraints( $name, $constraints, $errors );
     }
 
@@ -219,10 +288,10 @@ sub params {
     my $self = shift;
 
     if (@_) {
-        $self->_form->{'params'} = shift;
+        $self->_form->query(shift);
     }
 
-    return $self->_form->{'params'};
+    return $self->_form->query;
 }
 
 sub exists {
@@ -248,6 +317,8 @@ sub unique {
 sub validate {
     my $self = shift;
     $self->validator->results->clear;
+
+    $self->_form->process;
 
     ## ugly. this will go when I move to Reaction :-)
     local *FormValidator::Simple::Validator::UNIQUE = sub {
@@ -295,6 +366,8 @@ sub validate {
 
 sub submitted {
     my $self = shift;
+
+    $self->_form->process;
 
     return $self->_form->submitted;
 }
@@ -649,7 +722,7 @@ Gets/sets the current form fields values.
 
 =head1 SEE ALSO
 
-L<Mango::Form::Results>, L<CGI::FormBuilder>, L<FormValidator::Simple>
+L<Mango::Form::Results>, L<HTML::FormFu>
 
 =head1 AUTHOR
 

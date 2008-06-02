@@ -1,4 +1,4 @@
-# $Id: /local/CPAN/Mango/lib/Mango/Profile.pm 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Profile.pm 1644 2008-06-02T01:46:53.055259Z claco  $
 package Mango::Profile;
 use strict;
 use warnings;
@@ -7,7 +7,7 @@ BEGIN {
     use base qw/Mango::Object/;
 
     __PACKAGE__->mk_group_accessors( 'column',
-        qw/user_id first_name last_name/ );
+        qw/user_id first_name last_name email/ );
 }
 
 sub full_name {
@@ -82,6 +82,18 @@ Returns the id of the current profile.
 Gets/sets the last name of the current profile.
 
     print $profile->last_name;
+
+=head2 email
+
+=over
+
+=item Arguments: $email
+
+=back
+
+Gets/sets the email of the current profile.
+
+    print $profile->email;
 
 =head2 update
 

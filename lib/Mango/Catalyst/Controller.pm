@@ -1,5 +1,5 @@
 ## no critic (ProhibitMixedCaseSubs)
-# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller.pm 1578 2008-05-10T01:30:21.225794Z claco  $
+# $Id: /local/CPAN/Mango/lib/Mango/Catalyst/Controller.pm 1644 2008-06-02T01:46:53.055259Z claco  $
 package Mango::Catalyst::Controller;
 use strict;
 use warnings;
@@ -123,6 +123,17 @@ sub enable_rss_feed {
     return;
 }
 
+sub not_found {
+    my $self = shift;
+    my $c    = $self->context;
+
+    $c->response->status(404);
+    $c->stash->{'template'} = 'errors/404';
+    $c->detach;
+
+    return;
+}
+
 1;
 __END__
 
@@ -199,6 +210,10 @@ or 10 if no param is specified.
 
 Registers the current class name as a resource associated with the
 specified name.
+
+=head2 not_found
+
+Returns a 404 not found page for the current request.
 
 =head1 SEE ALSO
 
