@@ -1,2 +1,0 @@
-[% page.title = c.localize('PAGE_TITLE_LOGOUT'), page.id = 'logout' %]
-[% INCLUDE 'includes/errors' %]

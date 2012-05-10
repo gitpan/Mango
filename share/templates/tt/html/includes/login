@@ -1,3 +1,0 @@
-[% IF NOT c.user_exists %]
-	[% c.forms('login').render %]
-[% END %]

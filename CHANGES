@@ -1,0 +1,89 @@
+This file documents the revision history for the Perl library Mango
+
+0.2.01
+
+-       process indexing so that order is preserved
+
+-       Changed name from MongoDBI to Myoll to Mango
+
+-       figure out a means to prevent reserved word, database keyword and schema
+        attribute naming collisions
+
+0.0.12   2012-01-28
+
+x       added missing is_inc shortcut not exported by M::D::Sugar
+
+x       added the foreach_document method being a wrapper around cursor
+
+x       changed main module synopsis
+
+0.0.10   2012-01-22
+
+x       fixed bug, is_id shortcut not exported by M::D::Sugar
+
+0.0.9   2012-01-21
+
+x       fixed bug when detecting and traversing attribute default values
+
+x       fixed bug when parsing mongodb query parameters
+
+0.0.8   2012-01-17
+
+x       added execute_on method in Operations to support for database connection
+        pooling with the ability to read and write to different connections
+
+0.0.7   2012-01-08
+
+x       fixed various uglies reported by PerlCritic
+
+0.0.6   2012-01-06
+
+x       added the query method to M::D::S::Operation (shorthand for $class->search(...)->query)
+
+x       fixed typo in the M::D::Config synopsis
+
+0.0.5   2012-01-05
+
+x       enable safe_mode by default with the option to turn it off
+
+x       redesigned testing method of operation has 100% test coverage of querying
+
+0.0.4   2011-12-19
+
+x       add is_id, and is_inc to M::D::Sugar. is_inc will auto-increment the
+        field when collapsing occurs (usually on save or insert), and is_id
+        adds a constraint that the field must be a MongoDB::OID
+        
+x       try using boolean::* methods to get exists to work properly
+
+x       add paging convenience method to M::D::S::Criterion
+        
+0.0.3   2011-12-17
+
+x       the chaining keyword, methods, etc have been renamed filter/filtering
+        and has a very different syntax
+        
+x       wrote POD for all classes in need
+
+0.0.2   2011-12-13
+
+x       more documentation, starting more tests to test chaining and searching
+        capabilities
+        
+0.0.1   2011-12-12
+
+x       properly traverses children of children of child documents (n) levels
+        deep
+
+x       added support for gridfs fields
+
+x       collapsing currently only collapses dirty fields but should be mindful
+        of fields with default values
+
+x       child and relative document class handlers should pass back the
+        document class object reference instead of the handler object ref
+
+x       child and relative document class handlers should be able to handle
+        objects as initial parameters
+
+x       this library is soooo new, .... its new

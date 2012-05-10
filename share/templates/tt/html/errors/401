@@ -1,5 +1,0 @@
-[% page.title = c.localize('UNAUTHORIZED'), page.id = 'error-401' %]
-
-<p>
-	[% c.localize('UNAUTHORIZED_MESSAGE') %]
-</p>

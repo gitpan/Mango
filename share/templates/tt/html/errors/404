@@ -1,5 +1,0 @@
-[% page.title = c.localize('RESOURCE_NOT_FOUND'), page.id = 'error-404' %]
-
-<p>
-	[% c.localize('RESOURCE_NOT_FOUND_MESSAGE') %]
-</p>

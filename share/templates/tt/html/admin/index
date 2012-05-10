@@ -1,2 +1,0 @@
-[% INCLUDE 'includes/admin/menu' %]
-[% page.id = 'page-admin' %]
