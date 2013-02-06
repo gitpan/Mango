@@ -1,31 +1,30 @@
 ---
-abstract: 'A proper ODM (Object-Document-Mapper) for MongoDB '
+abstract: 'Pure-Perl non-blocking I/O MongoDB client'
 author:
-  - 'Al Newkirk <awncorp@cpan.org>'
-  - 'Robert Grimes <buu@erxz.com>'
-build_requires: {}
+  - 'Sebastian Riedel <sri@cpan.org>'
+build_requires:
+  ExtUtils::MakeMaker: 0
 configure_requires:
-  ExtUtils::MakeMaker: 6.30
-dynamic_config: 0
-generated_by: 'Dist::Zilla version 4.300010, CPAN::Meta::Converter version 2.120630'
-license: perl
+  ExtUtils::MakeMaker: 0
+dynamic_config: 1
+generated_by: 'ExtUtils::MakeMaker version 6.64, CPAN::Meta::Converter version 2.120921'
+license: artistic_2
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: 1.4
 name: Mango
+no_index:
+  directory:
+    - t
+    - inc
+    - t
 requires:
-  Carp: 0
-  DateTime: 0
-  IO::File: 0
-  JSON: 0
-  Module::Find: 0
-  MongoDB: 0
-  Moose: 0
-  MooseX::Traits: 0
-  Scalar::Util: 0
-  boolean: 0
+  Mojolicious: 2.99
+  perl: 5.010001
 resources:
-  bugtracker: https://github.com/alnewkirk/Mango/issues
-  homepage: http://github.com/alnewkirk/Mango
-  repository: http://github.com/alnewkirk/Mango.git
-version: 0.001_01
+  bugtracker: http://github.com/kraih/mojo/issues
+  homepage: http://mojolicio.us
+  license: http://www.opensource.org/licenses/artistic-license-2.0
+  repository: http://github.com/kraih/mango
+  x_MailingList: http://groups.google.com/group/mojolicious
+version: 0.01

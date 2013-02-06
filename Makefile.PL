@@ -1,60 +1,30 @@
+use 5.010001;
 
 use strict;
 use warnings;
 
+use Config;
+use ExtUtils::MakeMaker;
 
+die "64bit Perl is required!\n" unless $Config{ivsize} > 4;
 
-use ExtUtils::MakeMaker 6.30;
-
-
-
-my %WriteMakefileArgs = (
-  "ABSTRACT" => "A proper ODM (Object-Document-Mapper) for MongoDB ",
-  "AUTHOR" => "Al Newkirk <awncorp\@cpan.org>, Robert Grimes <buu\@erxz.com>",
-  "BUILD_REQUIRES" => {},
-  "CONFIGURE_REQUIRES" => {
-    "ExtUtils::MakeMaker" => "6.30"
+WriteMakefile(
+  NAME         => 'Mango',
+  VERSION_FROM => 'lib/Mango.pm',
+  ABSTRACT     => 'Pure-Perl non-blocking I/O MongoDB client',
+  AUTHOR       => 'Sebastian Riedel <sri@cpan.org>',
+  LICENSE      => 'artistic_2',
+  META_MERGE   => {
+    requires  => {perl => '5.010001'},
+    resources => {
+      homepage    => 'http://mojolicio.us',
+      license     => 'http://www.opensource.org/licenses/artistic-license-2.0',
+      MailingList => 'http://groups.google.com/group/mojolicious',
+      repository  => 'http://github.com/kraih/mango',
+      bugtracker  => 'http://github.com/kraih/mojo/issues'
+    },
+    no_index => {directory => ['t']}
   },
-  "DISTNAME" => "Mango",
-  "EXE_FILES" => [],
-  "LICENSE" => "perl",
-  "NAME" => "Mango",
-  "PREREQ_PM" => {
-    "Carp" => 0,
-    "DateTime" => 0,
-    "IO::File" => 0,
-    "JSON" => 0,
-    "Module::Find" => 0,
-    "MongoDB" => 0,
-    "Moose" => 0,
-    "MooseX::Traits" => 0,
-    "Scalar::Util" => 0,
-    "boolean" => 0
-  },
-  "VERSION" => "0.001_01",
-  "test" => {
-    "TESTS" => "t/*.t"
-  }
+  PREREQ_PM => {Mojolicious => '2.99'},
+  test      => {TESTS       => 't/*.t t/*/*.t'}
 );
-
-
-unless ( eval { ExtUtils::MakeMaker->VERSION(6.56) } ) {
-  my $br = delete $WriteMakefileArgs{BUILD_REQUIRES};
-  my $pp = $WriteMakefileArgs{PREREQ_PM};
-  for my $mod ( keys %$br ) {
-    if ( exists $pp->{$mod} ) {
-      $pp->{$mod} = $br->{$mod} if $br->{$mod} > $pp->{$mod};
-    }
-    else {
-      $pp->{$mod} = $br->{$mod};
-    }
-  }
-}
-
-delete $WriteMakefileArgs{CONFIGURE_REQUIRES}
-  unless eval { ExtUtils::MakeMaker->VERSION(6.52) };
-
-WriteMakefile(%WriteMakefileArgs);
-
-
-
