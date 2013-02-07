@@ -1,10 +1,12 @@
 package Mango::Cursor;
 use Mojo::Base -base;
 
+use Mango::BSON 'bson_doc';
+use Mojo::IOLoop;
+
+has [qw(batch_size limit skip)] => 0;
 has [qw(collection id sort)];
-has limit => 10;
 has [qw(fields query)] => sub { {} };
-has skip => 0;
 
 sub all {
   my ($self, $cb) = @_;
@@ -18,6 +20,30 @@ sub all {
   return \@all;
 }
 
+sub count {
+  my $self = shift;
+  my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
+
+  my $collection = $self->collection;
+  my $count      = bson_doc
+    count => $collection->name,
+    query => $self->_query,
+    skip  => $self->skip,
+    limit => $self->limit;
+
+  # Non-blocking
+  return $collection->db->command(
+    $count => sub {
+      my ($collection, $err, $doc) = @_;
+      $self->$cb($err, $doc ? $doc->{n} : 0);
+    }
+  ) if $cb;
+
+  # Blocking
+  my $doc = $collection->db->command($count);
+  return $doc ? $doc->{n} : 0;
+}
+
 sub next {
   my ($self, $cb) = @_;
   return exists $self->{results} ? $self->_continue($cb) : $self->_start($cb);
@@ -26,8 +52,9 @@ sub next {
 sub rewind {
   my ($self, $cb) = @_;
 
-  return unless my $id = $self->id;
-  delete $self->id(undef)->{results};
+  delete $self->{$_} for qw(num results);
+  return $cb ? $self->_defer($cb) : undef unless my $id = $self->id;
+  $self->id(undef);
 
   # Non-blocking
   return $self->collection->db->mango->kill_cursors($id => sub { $self->$cb })
@@ -39,7 +66,7 @@ sub rewind {
 
 sub _collect {
   my ($self, $all, $cb, $err, $doc) = @_;
-  return $self->$cb($err, $all) if $err || !$doc;
+  return $self->_defer($cb, $err, $all) if $err || !$doc;
   push @$all, $doc;
   $self->next(sub { shift->_collect($all, $cb, @_) });
 }
@@ -51,19 +78,55 @@ sub _continue {
   my $collection = $self->collection;
   my $name       = $collection->full_name;
   if ($cb) {
-    return $self->$cb(undef, shift @{$self->{results}}) if @{$self->{results}};
+    return $self->_defer($cb, undef, $self->_dequeue) if $self->_enough;
     return $collection->db->mango->get_more(
-      ($name, $self->limit, $self->id) => sub {
+      ($name, $self->_max, $self->id) => sub {
         my ($mango, $err, $reply) = @_;
-        $self->$cb($err, $self->_queue($reply));
+        $self->$cb($err, $self->_enqueue($reply));
       }
     );
   }
 
   # Blocking
-  return shift @{$self->{results}} if @{$self->{results}};
-  return $self->_queue(
-    $collection->db->mango->get_more($name, $self->limit, $self->id));
+  return $self->_dequeue if $self->_enough;
+  return $self->_enqueue(
+    $collection->db->mango->get_more($name, $self->_max, $self->id));
+}
+
+sub _defer {
+  my ($self, $cb, @args) = @_;
+  Mojo::IOLoop->timer(0 => sub { $self->$cb(@args) });
+}
+
+sub _dequeue {
+  my $self = shift;
+  return undef if $self->_finished;
+  $self->{num}++;
+  return shift @{$self->{results}};
+}
+
+sub _enough { $_[0]->_finished ? 1 : !!@{$_[0]->{results}} }
+
+sub _finished {
+  my $self = shift;
+  return undef unless my $limit = $self->limit;
+  $limit = $limit * -1 if $limit < 0;
+  return ($self->{num} // 0) >= $limit ? 1 : undef;
+}
+
+sub _enqueue {
+  my ($self, $reply) = @_;
+  return unless $reply;
+  push @{$self->{results} ||= []}, @{$reply->{docs}};
+  return $self->_dequeue;
+}
+
+sub _max {
+  my $self  = shift;
+  my $limit = $self->limit;
+  my $size  = $self->batch_size;
+  return $size if $limit == 0;
+  return $size > $limit ? $limit : $size;
 }
 
 sub _query {
@@ -73,33 +136,27 @@ sub _query {
   return {'$query' => $query, '$orderby' => $sort};
 }
 
-sub _queue {
-  my ($self, $reply) = @_;
-  push @{$self->{results} ||= []}, @{$reply->[5]};
-  return shift @{$self->{results}};
-}
-
 sub _start {
   my ($self, $cb) = @_;
 
   my $collection = $self->collection;
   my $name       = $collection->full_name;
   my @args
-    = ($name, {}, $self->skip, $self->limit, $self->_query, $self->fields);
+    = ($name, {}, $self->skip, $self->_max, $self->_query, $self->fields);
 
   # Non-blocking
   return $collection->db->mango->query(
     @args => sub {
       my ($mango, $err, $reply) = @_;
-      $self->id($reply->[3]);
-      $self->$cb($err, $self->_queue($reply));
+      $self->id($reply->{cursor}) if $reply;
+      $self->$cb($err, $self->_enqueue($reply));
     }
   ) if $cb;
 
   # Blocking
   my $reply = $collection->db->mango->query(@args);
-  $self->id($reply->[3]);
-  return $self->_queue($reply);
+  $self->id($reply->{cursor}) if $reply;
+  return $self->_enqueue($reply);
 }
 
 1;
@@ -123,6 +180,13 @@ L<Mango::Collection>.
 
 L<Mango::Cursor> implements the following attributes.
 
+=head2 batch_size
+
+  my $size = $cursor->batch_size;
+  $cursor  = $cursor->batch_size(10);
+
+Batch size, defaults to C<0>.
+
 =head2 collection
 
   my $collection = $cursor->collection;
@@ -140,9 +204,9 @@ Cursor id.
 =head2 limit
 
   my $limit = $cursor->limit;
-  $cursor   = $cursor->limit(1);
+  $cursor   = $cursor->limit(10);
 
-Limit, defaults to C<10>.
+Limit, defaults to C<0>.
 
 =head2 fields
 
@@ -186,6 +250,19 @@ non-blocking.
 
   $cursor->all(sub {
     my ($cursor, $err, $docs) = @_;
+    ...
+  });
+  Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
+
+=head2 count
+
+  my $count = $cursor->count;
+
+Count number of documents this cursor can return. You can also append a
+callback to perform operation non-blocking.
+
+  $cursor->count(sub {
+    my ($cursor, $err, $count) = @_;
     ...
   });
   Mojo::IOLoop->start unless Mojo::IOLoop->is_running;

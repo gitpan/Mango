@@ -33,7 +33,7 @@
       },
       "runtime" : {
          "requires" : {
-            "Mojolicious" : "2.99",
+            "Mojolicious" : "3.84",
             "perl" : "5.010001"
          }
       }
@@ -41,7 +41,7 @@
    "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
-         "web" : "http://github.com/kraih/mojo/issues"
+         "web" : "http://github.com/kraih/mango/issues"
       },
       "homepage" : "http://mojolicio.us",
       "license" : [
@@ -52,5 +52,5 @@
       },
       "x_MailingList" : "http://groups.google.com/group/mojolicious"
    },
-   "version" : "0.01"
+   "version" : "0.02"
 }

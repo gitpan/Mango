@@ -6,7 +6,8 @@ use warnings;
 use Config;
 use ExtUtils::MakeMaker;
 
-die "64bit Perl is required!\n" unless $Config{ivsize} > 4;
+die "Perl with support for quads is required!\n"
+  unless (($Config{use64bitint} // '') eq 'define' || $Config{longsize} >= 8);
 
 WriteMakefile(
   NAME         => 'Mango',
@@ -21,10 +22,10 @@ WriteMakefile(
       license     => 'http://www.opensource.org/licenses/artistic-license-2.0',
       MailingList => 'http://groups.google.com/group/mojolicious',
       repository  => 'http://github.com/kraih/mango',
-      bugtracker  => 'http://github.com/kraih/mojo/issues'
+      bugtracker  => 'http://github.com/kraih/mango/issues'
     },
     no_index => {directory => ['t']}
   },
-  PREREQ_PM => {Mojolicious => '2.99'},
+  PREREQ_PM => {Mojolicious => '3.84'},
   test      => {TESTS       => 't/*.t t/*/*.t'}
 );

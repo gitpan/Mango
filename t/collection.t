@@ -10,6 +10,7 @@ plan skip_all => 'set TEST_ONLINE to enable this test'
 # Collection names
 my $mango      = Mango->new($ENV{TEST_ONLINE});
 my $collection = $mango->db->collection('collection_test');
+$collection->remove;
 is $collection->name, 'collection_test', 'right collection name';
 is $collection->full_name, join('.', $mango->db->name, $collection->name),
   'right full collection name';
@@ -20,6 +21,22 @@ isa_ok $oids->[0], 'Mango::BSON::ObjectID', 'right reference';
 isa_ok $oids->[1], 'Mango::BSON::ObjectID', 'right reference';
 is $collection->find_one($oids->[0])->{foo}, 'bar', 'right value';
 is $collection->find_one($oids->[1])->{foo}, 'baz', 'right value';
+
+# Update documents blocking
+is $collection->update({}, {'$set' => {bar => 'works'}}, {multi => 1})->{n},
+  2, 'two documents updated';
+is $collection->update({}, {'$set' => {baz => 'too'}})->{n}, 1,
+  'one document updated';
+is $collection->find_one($oids->[0])->{bar}, 'works', 'right value';
+is $collection->find_one($oids->[1])->{bar}, 'works', 'right value';
+is $collection->update({missing => 1}, {now => 'there'}, {upsert => 1})->{n},
+  1, 'one document updated';
+is $collection->update({missing => 1}, {now => 'there'}, {upsert => 1})->{n},
+  1, 'one document updated';
+is $collection->remove({now => 'there'}, {single => 1})->{n}, 1,
+  'one document removed';
+is $collection->remove({now => 'there'}, {single => 1})->{n}, 1,
+  'one document removed';
 
 # Remove one document blocking
 is $collection->remove({foo => 'baz'})->{n}, 1, 'one document removed';

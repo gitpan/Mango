@@ -22,16 +22,16 @@ has protocol    => sub { Mango::Protocol->new };
 has w           => 1;
 has wtimeout    => 1000;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 # Operations with reply
 for my $name (qw(get_more query)) {
   monkey_patch __PACKAGE__, $name, sub {
     my $self = shift;
     my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
-    my ($id, $bytes) = $self->_build($name, @_);
+    my ($id, $msg) = $self->_build($name, @_);
     warn "-- Operation $id ($name)\n" if DEBUG;
-    $self->_start($id, 1, $bytes, $cb);
+    $self->_start({id => $id, safe => 1, msg => $msg, cb => $cb});
   };
 }
 
@@ -42,7 +42,7 @@ for my $name (qw(delete insert update)) {
     my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
 
     # Make sure both operations can be written together
-    my ($id, $bytes) = $self->_build($name, $ns, @_);
+    my ($id, $msg) = $self->_build($name, $ns, @_);
     $id = $self->_id;
     $ns =~ s/\..+$/\.\$cmd/;
     my $command = bson_doc
@@ -50,10 +50,10 @@ for my $name (qw(delete insert update)) {
       j            => $self->j ? bson_true : bson_false,
       w            => $self->w,
       wtimeout     => $self->wtimeout;
-    $bytes .= $self->protocol->build_query($id, $ns, {}, 0, -1, $command, {});
+    $msg .= $self->protocol->build_query($id, $ns, {}, 0, -1, $command, {});
 
     warn "-- Operation $id ($name)\n" if DEBUG;
-    $self->_start($id, 1, $bytes, $cb);
+    $self->_start({id => $id, safe => 1, msg => $msg, cb => $cb});
   };
 }
 
@@ -101,9 +101,9 @@ sub is_active { !!(scalar @{$_[0]{queue} || []} || $_[0]{current}) }
 sub kill_cursors {
   my $self = shift;
   my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
-  my ($id, $bytes) = $self->_build('kill_cursors', @_);
+  my ($id, $msg) = $self->_build('kill_cursors', @_);
   warn "-- Unsafe operation $id (kill_cursors)\n" if DEBUG;
-  $self->_start($id, 0, $bytes, $cb);
+  $self->_start({id => $id, safe => 0, msg => $msg, cb => $cb});
 }
 
 sub _auth {
@@ -111,8 +111,8 @@ sub _auth {
   my ($db, $user, $pass) = @$auth;
 
   # No nonce value
-  return $self->_connected($credentials) if $err || !$reply->[5][0]{ok};
-  my $nonce = $reply->[5][0]{nonce};
+  return $self->_connected($credentials) if $err || !$reply->{docs}[0]{ok};
+  my $nonce = $reply->{docs}[0]{nonce};
 
   # Authenticate
   my $key = md5_sum $nonce . $user . md5_sum "${user}:mongo:${pass}";
@@ -138,7 +138,7 @@ sub _cleanup {
   # Clean up all operations
   my $queue = delete $self->{queue} || [];
   unshift @$queue, $self->{current} if $self->{current};
-  $self->_finish(undef, $_->[2], 'Premature connection close') for @$queue;
+  $self->_finish(undef, $_->{cb}, 'Premature connection close') for @$queue;
 }
 
 sub _close {
@@ -152,9 +152,9 @@ sub _command {
 
   # Skip the queue and run command right away
   my $id = $self->_id;
-  my $bytes
+  my $msg
     = $self->protocol->build_query($id, "$db.\$cmd", {}, 0, -1, $command, {});
-  unshift @{$self->{queue}}, [$id, 1, $cb, $bytes];
+  unshift @{$self->{queue}}, {id => $id, safe => 1, cb => $cb, msg => $msg};
   warn "-- Fast operation $id (query)\n" if DEBUG;
   $self->_write;
 }
@@ -197,30 +197,24 @@ sub _error {
   my $current = delete $self->{current};
   $current //= shift @{$self->{queue}} if $err;
   return $err ? $self->emit(error => $err) : undef unless $current;
-  $self->_finish(undef, $current->[2], $err || 'Premature connection close');
+  $self->_finish(undef, $current->{cb}, $err || 'Premature connection close');
 }
 
 sub _finish {
   my ($self, $reply, $cb, $err) = @_;
-  $err ||= $reply->[5][0]{'$err'}
-    if $reply && $reply->[3] == 0 && @{$reply->[5]};
+  my $docs = $reply ? $reply->{docs} : [];
+  $err ||= $docs->[0]{'$err'} if @$docs && $reply->{cursor} == 0;
   $self->$cb($err, $reply);
 }
 
-sub _id {
-  my $self = shift;
-  my $id   = ++$self->{id};
-  $id = $self->{id} = 1 if $id > 2147483647;
-  return $id;
-}
+sub _id { $_[0]->{id} = $_[0]->protocol->next_id($_[0]->{id} // 0) }
 
 sub _loop { $_[0]{nb} ? Mojo::IOLoop->singleton : $_[0]->ioloop }
 
-sub _op {
-  my ($self, $id, $safe, $bytes, $cb) = @_;
-  push @{$self->{queue} ||= []}, [$id, $safe, $cb, $bytes];
-  if   ($self->{connection}) { $self->_write }
-  else                       { $self->_connect }
+sub _queue {
+  my ($self, $op) = @_;
+  push @{$self->{queue} ||= []}, $op;
+  $self->{connection} ? $self->_write : $self->_connect;
 }
 
 sub _read {
@@ -228,18 +222,18 @@ sub _read {
 
   $self->{buffer} .= $chunk;
   while (my $reply = $self->protocol->parse_reply(\$self->{buffer})) {
-    warn "-- Client <<< Server ($reply->[1])\n" if DEBUG;
-    next unless $reply->[1] == $self->{current}[0];
-    $self->_finish($reply, (delete $self->{current})->[2]);
+    warn "-- Client <<< Server ($reply->{to})\n" if DEBUG;
+    next unless $reply->{to} == $self->{current}{id};
+    $self->_finish($reply, (delete $self->{current})->{cb});
   }
   $self->_write;
 }
 
 sub _start {
-  my ($self, $id, $safe, $bytes, $cb) = @_;
+  my ($self, $op) = @_;
 
   # Non-blocking
-  if ($cb) {
+  if ($op->{cb}) {
 
     # Start non-blocking
     unless ($self->{nb}) {
@@ -247,7 +241,8 @@ sub _start {
       $self->_cleanup;
       $self->{nb}++;
     }
-    return $self->_op($id, $safe, $bytes, $cb);
+
+    return $self->_queue($op);
   }
 
   # Start blocking
@@ -256,15 +251,13 @@ sub _start {
     $self->_cleanup;
     delete $self->{nb};
   }
-  my ($err, $reply);
-  $self->_op(
-    ($id, $safe, $bytes) => sub {
-      (my $self, $err, $reply) = @_;
-      $self->ioloop->stop;
-    }
-  );
 
-  # Start event loop
+  my ($err, $reply);
+  $op->{cb} = sub {
+    (my $self, $err, $reply) = @_;
+    $self->ioloop->stop;
+  };
+  $self->_queue($op);
   $self->ioloop->start;
 
   # Throw blocking errors
@@ -280,14 +273,14 @@ sub _write {
   return unless my $stream = $self->_loop->stream($self->{connection});
   return unless my $current = $self->{current} = shift @{$self->{queue}};
 
-  warn "-- Client >>> Server ($current->[0])\n" if DEBUG;
-  $stream->write(pop @$current);
+  warn "-- Client >>> Server ($current->{id})\n" if DEBUG;
+  $stream->write(delete $current->{msg});
 
   # Unsafe operations are done when they are written
-  return if $current->[1];
+  return if $current->{safe};
   weaken $self;
   $stream->write(
-    '' => sub { $self->_finish(undef, delete($self->{current})->[2]) });
+    '' => sub { $self->_finish(undef, delete($self->{current})->{cb}) });
 }
 
 1;
@@ -305,18 +298,20 @@ Mango - Pure-Perl non-blocking I/O MongoDB client
   my $oid = $mango->db('test')->collection('foo')->insert({bar => 'baz'});
 
   # Find document
-  use Mango::BSON ':bson';
   my $doc = $mango->db('test')->collection('foo')->find_one({bar => 'baz'});
   say $doc->{bar};
 
-  # Update document with special BSON type
-  use Mango::BSON ':bson';
+  # Update document
   $mango->db('test')->collection('foo')
-    ->update({bar => 'baz'}, {bar => bson_true});
+    ->update({bar => 'baz'}, {bar => 'yada'});
 
-  # Remove document with special BSON type
+  # Remove document
+  $mango->db('test')->collection('foo')->remove({bar => 'yada'});
+
+  # Insert document with special BSON types
   use Mango::BSON ':bson';
-  $mango->db('test')->collection('foo')->remove({bar => bson_true});
+  my $oid = $mango->db('test')->collection('foo')
+    ->insert({data => bson_bin("\x00\x01"), now => bson_time});
 
   # Find documents non-blocking (does work inside a running event loop)
   my $delay = Mojo::IOLoop->delay(sub {
@@ -471,12 +466,12 @@ can also append a callback to perform operation non-blocking.
 
 =head2 get_more
 
-  my $reply = $mango->get_more($name, $limit, $cursor);
+  my $reply = $mango->get_more($name, $return, $cursor);
 
 Perform low level C<get_more> operation. You can also append a callback to
 perform operation non-blocking.
 
-  $mango->get_more(($name, $limit, $cursor) => sub {
+  $mango->get_more(($name, $return, $cursor) => sub {
     my ($mango, $err, $reply) = @_;
     ...
   });
@@ -489,7 +484,7 @@ perform operation non-blocking.
 Perform low level C<insert> operation followed by C<getLastError> command. You
 can also append a callback to perform operation non-blocking.
 
-  $mango->delete(($name, $flags, @docs) => sub {
+  $mango->insert(($name, $flags, @docs) => sub {
     my ($mango, $err, $reply) = @_;
     ...
   });
@@ -516,12 +511,12 @@ perform operation non-blocking.
 
 =head2 query
 
-  my $reply = $mango->query($name, $flags, $skip, $limit, $query, $fields);
+  my $reply = $mango->query($name, $flags, $skip, $return, $query, $fields);
 
 Perform low level C<query> operation. You can also append a callback to
 perform operation non-blocking.
 
-  $mango->query(($name, $flags, $skip, $limit, $query, $fields) => sub {
+  $mango->query(($name, $flags, $skip, $return, $query, $fields) => sub {
     my ($mango, $err, $reply) = @_;
     ...
   });
@@ -534,7 +529,7 @@ perform operation non-blocking.
 Perform low level C<update> operation followed by C<getLastError> command. You
 can also append a callback to perform operation non-blocking.
 
-  $mango->delete(($name, $flags, $query, $update) => sub {
+  $mango->update(($name, $flags, $query, $update) => sub {
     my ($mango, $err, $reply) = @_;
     ...
   });

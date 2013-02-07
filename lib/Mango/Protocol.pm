@@ -22,9 +22,9 @@ sub build_delete {
   my $msg = encode_int32(0) . encode_cstring($name);
 
   # Flags
-  my $vec = 0b00000000000000000000000000000000;
-  _set($vec, 0b10000000000000000000000000000000, $flags->{single_remove});
-  $msg .= encode_int32 $vec;
+  my $vec = pack 'B*', '0' x 32;
+  vec($vec, 0, 1) = 1 if $flags->{single_remove};
+  $msg .= encode_int32 unpack('V', $vec);
 
   # Query
   $msg .= bson_encode $query;
@@ -34,13 +34,13 @@ sub build_delete {
 }
 
 sub build_get_more {
-  my ($self, $id, $name, $limit, $cursor) = @_;
+  my ($self, $id, $name, $return, $cursor) = @_;
 
   # Zero and name
   my $msg = encode_int32(0) . encode_cstring($name);
 
-  # Limit and cursor id
-  $msg .= encode_int32($limit) . encode_int64($cursor);
+  # Number to return and cursor id
+  $msg .= encode_int32($return) . encode_int64($cursor);
 
   # Header
   return _build_header($id, length($msg), GET_MORE) . $msg;
@@ -50,9 +50,9 @@ sub build_insert {
   my ($self, $id, $name, $flags) = (shift, shift, shift, shift);
 
   # Flags
-  my $vec = 0b00000000000000000000000000000000;
-  _set($vec, 0b10000000000000000000000000000000, $flags->{continue_on_error});
-  my $msg = encode_int32 $vec;
+  my $vec = pack 'B*', '0' x 32;
+  vec($vec, 0, 1) = 1 if $flags->{continue_on_error};
+  my $msg = encode_int32 unpack('V', $vec);
 
   # Name
   $msg .= encode_cstring $name;
@@ -78,23 +78,23 @@ sub build_kill_cursors {
 }
 
 sub build_query {
-  my ($self, $id, $name, $flags, $skip, $limit, $query, $fields) = @_;
+  my ($self, $id, $name, $flags, $skip, $return, $query, $fields) = @_;
 
   # Flags
-  my $vec = 0b00000000000000000000000000000000;
-  _set($vec, 0b01000000000000000000000000000000, $flags->{tailable_cursor});
-  _set($vec, 0b00100000000000000000000000000000, $flags->{slave_ok});
-  _set($vec, 0b00001000000000000000000000000000, $flags->{no_cursor_timeout});
-  _set($vec, 0b00000100000000000000000000000000, $flags->{await_data});
-  _set($vec, 0b00000010000000000000000000000000, $flags->{exhaust});
-  _set($vec, 0b00000001000000000000000000000000, $flags->{partial});
-  my $msg = encode_int32 $vec;
+  my $vec = pack 'B*', '0' x 32;
+  vec($vec, 1, 1) = 1 if $flags->{tailable_cursor};
+  vec($vec, 2, 1) = 1 if $flags->{slave_ok};
+  vec($vec, 3, 1) = 1 if $flags->{no_cursor_timeout};
+  vec($vec, 4, 1) = 1 if $flags->{await_data};
+  vec($vec, 5, 1) = 1 if $flags->{exhaust};
+  vec($vec, 6, 1) = 1 if $flags->{partial};
+  my $msg = encode_int32 unpack('V', $vec);
 
   # Name
   $msg .= encode_cstring $name;
 
-  # Skip and limit
-  $msg .= encode_int32($skip) . encode_int32($limit);
+  # Skip and number to return
+  $msg .= encode_int32($skip) . encode_int32($return);
 
   # Query
   $msg .= bson_encode $query;
@@ -113,10 +113,10 @@ sub build_update {
   my $msg = encode_int32(0) . encode_cstring($name);
 
   # Flags
-  my $vec = 0b00000000000000000000000000000000;
-  _set($vec, 0b10000000000000000000000000000000, $flags->{upsert});
-  _set($vec, 0b01000000000000000000000000000000, $flags->{multi_update});
-  $msg .= encode_int32 $vec;
+  my $vec = pack 'B*', '0' x 32;
+  vec($vec, 0, 1) = 1 if $flags->{upsert};
+  vec($vec, 1, 1) = 1 if $flags->{multi_update};
+  $msg .= encode_int32 unpack('V', $vec);
 
   # Query and update sepecification
   $msg .= bson_encode($query) . bson_encode($update);
@@ -124,6 +124,8 @@ sub build_update {
   # Header
   return _build_header($id, length($msg), UPDATE) . $msg;
 }
+
+sub next_id { $_[1] > 2147483646 ? 1 : $_[1] + 1 }
 
 sub parse_reply {
   my ($self, $bufref) = @_;
@@ -143,9 +145,9 @@ sub parse_reply {
   # FLags
   my $flags = {};
   my $vec = decode_int32(substr $msg, 0, 4, '');
-  $flags->{cursor_not_found} = _get($vec, 0b10000000000000000000000000000000);
-  $flags->{query_failure}    = _get($vec, 0b01000000000000000000000000000000);
-  $flags->{await_capable}    = _get($vec, 0b00010000000000000000000000000000);
+  $flags->{cursor_not_found} = _flag($vec, 0b10000000000000000000000000000000);
+  $flags->{query_failure}    = _flag($vec, 0b01000000000000000000000000000000);
+  $flags->{await_capable}    = _flag($vec, 0b00010000000000000000000000000000);
 
   # Cursor id
   my $cursor = decode_int64(substr $msg, 0, 8, '');
@@ -158,7 +160,14 @@ sub parse_reply {
   my @docs;
   push @docs, bson_decode(substr $msg, 0, bson_length($msg), '') while $msg;
 
-  return [$id, $to, $flags, $cursor, $from, \@docs];
+  return {
+    id     => $id,
+    to     => $to,
+    flags  => $flags,
+    cursor => $cursor,
+    from   => $from,
+    docs   => \@docs
+  };
 }
 
 sub _build_header {
@@ -166,9 +175,7 @@ sub _build_header {
   return join '', map { encode_int32($_) } $length + 16, $id, 0, $op;
 }
 
-sub _get { (vec($_[0], 0, 32) & $_[1]) == $_[1] ? 1 : 0 }
-
-sub _set { vec($_[0], 0, 32) |= $_[1] if $_[2] }
+sub _flag { (vec($_[0], 0, 32) & $_[1]) == $_[1] ? 1 : 0 }
 
 1;
 
@@ -201,7 +208,7 @@ Build packet for C<delete> operation.
 
 =head2 build_get_more
 
-  my $bytes = $protocol->build_get_more($id, $name, $limit, $cursor);
+  my $bytes = $protocol->build_get_more($id, $name, $return, $cursor);
 
 Build packet for C<get_more> operation.
 
@@ -219,7 +226,7 @@ Build packet for C<kill_cursors> operation.
 
 =head2 build_query
 
-  my $bytes = $protocol->build_query($id, $name, $flags, $skip, $limit,
+  my $bytes = $protocol->build_query($id, $name, $flags, $skip, $return,
     $query, $fields);
 
 Build packet for C<query> operation.
@@ -229,6 +236,12 @@ Build packet for C<query> operation.
   my $bytes = $protocol->build_update($id, $name, $flags, $query, $update);
 
 Build packet for C<update> operation.
+
+=head2 next_id
+
+  my $id = $protocol->next_id(23);
+
+Generate next id.
 
 =head2 parse_reply
 
