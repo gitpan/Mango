@@ -24,7 +24,7 @@ sub build_delete {
   # Flags
   my $vec = pack 'B*', '0' x 32;
   vec($vec, 0, 1) = 1 if $flags->{single_remove};
-  $msg .= encode_int32 unpack('V', $vec);
+  $msg .= encode_int32(unpack 'V', $vec);
 
   # Query
   $msg .= bson_encode $query;
@@ -52,7 +52,7 @@ sub build_insert {
   # Flags
   my $vec = pack 'B*', '0' x 32;
   vec($vec, 0, 1) = 1 if $flags->{continue_on_error};
-  my $msg = encode_int32 unpack('V', $vec);
+  my $msg = encode_int32(unpack 'V', $vec);
 
   # Name
   $msg .= encode_cstring $name;
@@ -84,11 +84,11 @@ sub build_query {
   my $vec = pack 'B*', '0' x 32;
   vec($vec, 1, 1) = 1 if $flags->{tailable_cursor};
   vec($vec, 2, 1) = 1 if $flags->{slave_ok};
-  vec($vec, 3, 1) = 1 if $flags->{no_cursor_timeout};
-  vec($vec, 4, 1) = 1 if $flags->{await_data};
-  vec($vec, 5, 1) = 1 if $flags->{exhaust};
-  vec($vec, 6, 1) = 1 if $flags->{partial};
-  my $msg = encode_int32 unpack('V', $vec);
+  vec($vec, 4, 1) = 1 if $flags->{no_cursor_timeout};
+  vec($vec, 5, 1) = 1 if $flags->{await_data};
+  vec($vec, 6, 1) = 1 if $flags->{exhaust};
+  vec($vec, 7, 1) = 1 if $flags->{partial};
+  my $msg = encode_int32(unpack 'V', $vec);
 
   # Name
   $msg .= encode_cstring $name;
@@ -116,13 +116,19 @@ sub build_update {
   my $vec = pack 'B*', '0' x 32;
   vec($vec, 0, 1) = 1 if $flags->{upsert};
   vec($vec, 1, 1) = 1 if $flags->{multi_update};
-  $msg .= encode_int32 unpack('V', $vec);
+  $msg .= encode_int32(unpack 'V', $vec);
 
   # Query and update sepecification
   $msg .= bson_encode($query) . bson_encode($update);
 
   # Header
   return _build_header($id, length($msg), UPDATE) . $msg;
+}
+
+sub command_error {
+  my ($self, $reply) = @_;
+  my $doc = $reply->{docs}[0];
+  return $doc->{ok} ? $doc->{err} : $doc->{errmsg};
 }
 
 sub next_id { $_[1] > 2147483646 ? 1 : $_[1] + 1 }
@@ -144,10 +150,10 @@ sub parse_reply {
 
   # FLags
   my $flags = {};
-  my $vec = decode_int32(substr $msg, 0, 4, '');
-  $flags->{cursor_not_found} = _flag($vec, 0b10000000000000000000000000000000);
-  $flags->{query_failure}    = _flag($vec, 0b01000000000000000000000000000000);
-  $flags->{await_capable}    = _flag($vec, 0b00010000000000000000000000000000);
+  my $vec = substr $msg, 0, 4, '';
+  $flags->{cursor_not_found} = vec $vec, 0, 1;
+  $flags->{query_failure}    = vec $vec, 1, 1;
+  $flags->{await_capable}    = vec $vec, 3, 1;
 
   # Cursor id
   my $cursor = decode_int64(substr $msg, 0, 8, '');
@@ -170,12 +176,16 @@ sub parse_reply {
   };
 }
 
+sub query_failure {
+  my ($self, $reply) = @_;
+  return undef unless $reply;
+  return $reply->{flags}{query_failure} ? $reply->{docs}[0]{'$err'} : undef;
+}
+
 sub _build_header {
   my ($id, $length, $op) = @_;
   return join '', map { encode_int32($_) } $length + 16, $id, 0, $op;
 }
-
-sub _flag { (vec($_[0], 0, 32) & $_[1]) == $_[1] ? 1 : 0 }
 
 1;
 
@@ -204,38 +214,44 @@ following new ones.
 
   my $bytes = $protocol->build_delete($id, $name, $flags, $query);
 
-Build packet for C<delete> operation.
+Build message for C<delete> operation.
 
 =head2 build_get_more
 
   my $bytes = $protocol->build_get_more($id, $name, $return, $cursor);
 
-Build packet for C<get_more> operation.
+Build message for C<get_more> operation.
 
 =head2 build_insert
 
   my $bytes = $protocol->build_insert($id, $name, $flags, @docs);
 
-Build packet for C<insert> operation.
+Build message for C<insert> operation.
 
 =head2 build_kill_cursors
 
   my $bytes = $protocol->build_kill_cursors($id, @ids);
 
-Build packet for C<kill_cursors> operation.
+Build message for C<kill_cursors> operation.
 
 =head2 build_query
 
   my $bytes = $protocol->build_query($id, $name, $flags, $skip, $return,
     $query, $fields);
 
-Build packet for C<query> operation.
+Build message for C<query> operation.
 
 =head2 build_update
 
   my $bytes = $protocol->build_update($id, $name, $flags, $query, $update);
 
-Build packet for C<update> operation.
+Build message for C<update> operation.
+
+=head2 command_error
+
+  my $err = $protocol->command_error($reply);
+
+Check reply for command error.
 
 =head2 next_id
 
@@ -247,7 +263,13 @@ Generate next id.
 
   my $reply = $protocol->parse_reply(\$string);
 
-Extract and parse C<reply> packet.
+Extract and parse C<reply> message.
+
+=head2 query_failure
+
+  my $err = $protocol->query_failure($reply);
+
+Check reply for query failure.
 
 =head1 SEE ALSO
 

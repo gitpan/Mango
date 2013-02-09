@@ -10,7 +10,7 @@ plan skip_all => 'set TEST_ONLINE to enable this test'
 # Add some documents to fetch
 my $mango      = Mango->new($ENV{TEST_ONLINE});
 my $collection = $mango->db->collection('cursor_test');
-$collection->remove;
+$collection->drop;
 my $oids = $collection->insert([{test => 3}, {test => 1}, {test => 2}]);
 is scalar @$oids, 3, 'three documents inserted';
 
@@ -37,10 +37,66 @@ is $docs->[2]{test}, 3, 'right document';
 
 # Fetch two documents blocking
 $docs = $collection->find({})->limit(2)->sort({test => 1})->all;
-@$docs = sort { $a->{test} <=> $b->{test} } @$docs;
 is scalar @$docs, 2, 'two documents';
 is $docs->[0]{test}, 1, 'right document';
 is $docs->[1]{test}, 2, 'right document';
+
+# Build query
+$cursor = $collection->find({test => 1});
+is_deeply $cursor->build_query, {test => 1}, 'right query';
+is_deeply $cursor->build_query(1), {'$query' => {test => 1}, '$explain' => 1},
+  'right query';
+$cursor->sort({test => -1});
+is_deeply $cursor->build_query,
+  {'$query' => {test => 1}, '$orderby' => {test => -1}}, 'right query';
+$cursor->sort(undef)->hint({test => 1})->snapshot(1);
+is_deeply $cursor->build_query,
+  {'$query' => {test => 1}, '$hint' => {test => 1}, '$snapshot' => 1},
+  'right query';
+
+# Clone cursor
+$cursor
+  = $collection->find({test => {'$exists' => 1}})->batch_size(2)->limit(3)
+  ->skip(1)->sort({test => 1})->fields({test => 1});
+my $doc = $cursor->next;
+ok defined $cursor->id, 'has a cursor id';
+ok $doc->{test}, 'right document';
+my $clone = $cursor->snapshot(1)->hint({test => 1})->tailable(1)->clone;
+isnt $cursor, $clone, 'different objects';
+ok !defined $clone->id, 'has no cursor id';
+is $clone->batch_size, 2, 'right batch size';
+is_deeply $clone->fields, {test => 1}, 'right fields';
+is_deeply $clone->hint,   {test => 1}, 'right hint value';
+is $clone->limit, 3, 'right limit';
+is_deeply $clone->query, {test => {'$exists' => 1}}, 'right query';
+is $clone->skip,     1, 'right skip value';
+is $clone->snapshot, 1, 'right snapshot value';
+is $clone->tailable, 1, 'is tailable';
+is_deeply $clone->sort, {test => 1}, 'right sort value';
+
+# Explain blocking
+$cursor = $collection->find({test => 2});
+$doc = $cursor->explain;
+is $doc->{n}, 1, 'one document';
+$doc = $cursor->next;
+is $doc->{test}, 2, 'right document';
+
+# Explain non-blocking
+$cursor = $collection->find({test => 2});
+my ($fail, $n);
+$cursor->explain(
+  sub {
+    my ($cursor, $err, $doc) = @_;
+    $fail = $err;
+    $n    = $doc->{n};
+    Mojo::IOLoop->stop;
+  }
+);
+Mojo::IOLoop->start;
+ok !$mango->is_active, 'no operations in progress';
+ok !$fail, 'no error';
+is $n, 1, 'one document';
+is $cursor->next->{test}, 2, 'right document';
 
 # Count documents blocking
 is $collection->find({foo => 'bar'})->count, 0, 'no documents';
@@ -48,7 +104,8 @@ is $collection->find({})->skip(1)->limit(1)->count, 1, 'one document';
 is $collection->find({})->count, 3, 'three documents';
 
 # Count documents non-blocking
-my ($fail, @count);
+$fail = undef;
+my @count;
 my $delay = Mojo::IOLoop->delay(
   sub {
     my $delay = shift;
@@ -130,7 +187,7 @@ is_deeply $docs, [{test => 1}, {test => 2}, {test => 3}], 'right subset';
 $cursor = $collection->find({});
 ok !$cursor->id, 'no cursor id';
 $cursor->rewind;
-my $doc = $cursor->next;
+$doc = $cursor->next;
 ok $doc, 'found a document';
 $cursor->rewind;
 is_deeply $cursor->next, $doc, 'found same document again';
@@ -151,21 +208,52 @@ $delay  = Mojo::IOLoop->delay(
     $cursor->rewind($delay->begin);
   },
   sub {
-    my $delay = shift;
+    my ($delay, $err) = @_;
+    $fail ||= $err;
     $cursor->next($delay->begin);
   },
   sub {
     my ($delay, $err, $doc) = @_;
     $fail ||= $err;
     push @docs, $doc;
-  },
+  }
 );
 $delay->wait;
 ok !$mango->is_active, 'no operations in progress';
 ok !$fail, 'no error';
 is_deeply $docs[0], $docs[1], 'found same document again';
 
-# Remove all documents from collection
-is $collection->remove->{n}, 3, 'three documents removed';
+# Tailable cursor
+$collection->drop;
+$collection->create({capped => \1, max => 2, size => 100000});
+my $mango2      = Mango->new($ENV{TEST_ONLINE});
+my $collection2 = $mango2->db->collection('cursor_test');
+$collection2->insert([{test => 1}, {test => 2}]);
+$cursor = $collection->find({})->tailable(1);
+is $cursor->next->{test}, 1, 'right document';
+is $cursor->next->{test}, 2, 'right document';
+$fail = undef;
+my ($added, $tail);
+$delay = Mojo::IOLoop->delay(
+  sub {
+    my $delay = shift;
+    my $end   = $delay->begin;
+    $cursor->next($delay->begin);
+    Mojo::IOLoop->timer(
+      0.5 => sub { $collection2->insert({test => 3} => $end) });
+  },
+  sub {
+    my ($delay, $err1, $oid, $err2, $doc) = @_;
+    $fail  = $err1 // $err2;
+    $added = $oid;
+    $tail  = $doc;
+  }
+);
+$delay->wait;
+ok !$mango->is_active, 'no operations in progress';
+ok !$fail, 'no error';
+is $tail->{test}, 3, 'right document';
+is $tail->{_id}, $added, 'same document';
+$collection->drop;
 
 done_testing();

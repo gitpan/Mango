@@ -2,10 +2,50 @@ package Mango::Collection;
 use Mojo::Base -base;
 
 use Carp 'croak';
-use Mango::BSON 'bson_oid';
+use Mango::BSON qw(bson_doc bson_oid bson_true);
 use Mango::Cursor;
 
 has [qw(db name)];
+
+sub create {
+  my $self = shift;
+  my $cb   = ref $_[-1] eq 'CODE' ? pop : undef;
+  my $doc  = bson_doc create => $self->name, %{shift // {}};
+
+  # Non-blocking
+  return $self->db->command($doc => sub { shift; $self->$cb(@_) }) if $cb;
+
+  # Blocking
+  return $self->db->command($doc);
+}
+
+sub drop {
+  my ($self, $cb) = @_;
+
+  # Non-blocking
+  my $doc = bson_doc drop => $self->name;
+  return $self->db->command($doc => sub { shift; $self->$cb(@_) }) if $cb;
+
+  # Blocking
+  return $self->db->command($doc);
+}
+
+sub ensure_index {
+  my ($self, $spec) = (shift, shift);
+  my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
+  my $doc = shift // {};
+
+  $doc->{name} //= join '_', keys %$spec;
+  $doc->{ns}  = $self->full_name;
+  $doc->{key} = $spec;
+
+  # Non-blocking
+  my $collection = $self->db->collection('system.indexes');
+  return $collection->insert($doc => sub { shift; $self->$cb(@_) }) if $cb;
+
+  # Blocking
+  $collection->insert($doc);
+}
 
 sub find {
   my ($self, $query) = @_;
@@ -18,15 +58,11 @@ sub find_one {
   my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
 
   # Non-blocking
-  return $self->find($query)->limit(-1)->next(
-    sub {
-      my ($cursor, $err, $doc) = @_;
-      $self->$cb($err, $doc);
-    }
-  ) if $cb;
+  my $cursor = $self->find($query)->limit(-1);
+  return $cursor->next(sub { shift; $self->$cb(@_) }) if $cb;
 
   # Blocking
-  return $self->find($query)->limit(-1)->next;
+  return $cursor->next;
 }
 
 sub full_name { join '.', $_[0]->db->name, $_[0]->name }
@@ -40,42 +76,34 @@ sub insert {
   my @ids = map { $_->{_id} //= bson_oid } @$docs;
 
   # Non-blocking
-  return $self->db->mango->insert(
+  my $mango = $self->db->mango;
+  return $mango->insert(
     ($self->full_name, {}, @$docs) => sub {
       my ($mango, $err, $reply) = @_;
-      $err ||= _error($reply);
+      $err ||= $mango->protocol->command_error($reply);
       $self->$cb($err, @ids > 1 ? \@ids : $ids[0]);
     }
   ) if $cb;
 
   # Blocking
-  my $reply = $self->db->mango->insert($self->full_name, {}, @$docs);
-  if (my $err = _error($reply)) { croak $err }
+  my $reply = $mango->insert($self->full_name, {}, @$docs);
+  if (my $err = $mango->protocol->command_error($reply)) { croak $err }
   return @ids > 1 ? \@ids : $ids[0];
 }
 
 sub remove {
-  my $self    = shift;
-  my $query   = ref $_[0] eq 'CODE' ? {} : shift // {};
-  my $options = ref $_[0] eq 'CODE' ? {} : shift // {};
-  my $flags   = $options->{single} ? {single_remove => 1} : {};
+  my $self  = shift;
+  my $query = ref $_[0] eq 'CODE' ? {} : shift // {};
+  my $flags = ref $_[0] eq 'CODE' ? {} : shift // {};
+  $flags->{single_remove} = delete $flags->{single};
   return $self->_handle('delete', $flags, $query, @_);
 }
 
 sub update {
   my ($self, $query, $update) = (shift, shift, shift);
-  my $options = ref $_[0] eq 'CODE' ? {} : shift // {};
-
-  my $flags = {};
-  $flags->{upsert}       = $options->{upsert};
-  $flags->{multi_update} = $options->{multi};
-
+  my $flags = ref $_[0] eq 'CODE' ? {} : shift // {};
+  $flags->{multi_update} = delete $flags->{multi};
   return $self->_handle('update', $flags, $query, $update, @_);
-}
-
-sub _error {
-  my $doc = shift->{docs}[0];
-  return $doc->{ok} ? $doc->{err} : $doc->{errmsg};
 }
 
 sub _handle {
@@ -83,17 +111,18 @@ sub _handle {
   my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
 
   # Non-blocking
-  return $self->db->mango->$method(
+  my $mango = $self->db->mango;
+  return $mango->$method(
     ($self->full_name, @_) => sub {
       my ($mango, $err, $reply) = @_;
-      $err ||= _error($reply);
+      $err ||= $mango->protocol->command_error($reply);
       $self->$cb($err, $reply->{docs}[0]);
     }
   ) if $cb;
 
   # Blocking
-  my $reply = $self->db->mango->$method($self->full_name, @_);
-  if (my $err = _error($reply)) { croak $err }
+  my $reply = $mango->$method($self->full_name, @_);
+  if (my $err = $mango->protocol->command_error($reply)) { croak $err }
   return $reply->{docs}[0];
 }
 
@@ -137,6 +166,48 @@ Name of this collection.
 
 L<Mango::Collection> inherits all methods from L<Mojo::Base> and implements
 the following new ones.
+
+=head2 create
+
+  $collection->create;
+  $collection->create({capped => bson_true, max => 5, size => 10000});
+
+Create collection. You can also append a callback to perform operation
+non-blocking.
+
+  $collection->create({capped => bson_true, max => 5, size => 10000} => sub {
+    my ($collection, $err) = @_;
+    ...
+  });
+  Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
+
+=head2 drop
+
+  my $doc = $collection->drop;
+
+Drop collection. You can also append a callback to perform operation
+non-blocking.
+
+  $collection->drop(sub {
+    my ($collection, $err, $doc) = @_;
+    ...
+  });
+  Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
+
+=head2 ensure_index
+
+  $collection->ensure_index(bson_doc(foo => 1, bar => -1));
+  $collection->ensure_index({foo => 1});
+  $collection->ensure_index({foo => 1}, {unique => bson_true});
+
+Make sure an index exists, the order of keys matters for compound indexes. You
+can also append a callback to perform operation non-blocking.
+
+  $collection->ensure_index(({foo => 1}, {unique => bson_true}) => sub {
+    my ($collection, $err) = @_;
+    ...
+  });
+  Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
 
 =head2 find
 

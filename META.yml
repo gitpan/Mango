@@ -27,4 +27,4 @@ resources:
   license: http://www.opensource.org/licenses/artistic-license-2.0
   repository: http://github.com/kraih/mango
   x_MailingList: http://groups.google.com/group/mojolicious
-version: 0.02
+version: 0.03
