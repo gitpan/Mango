@@ -1,6 +1,7 @@
 use Mojo::Base -strict;
 
 use Test::More;
+use List::Util 'first';
 use Mango;
 use Mojo::IOLoop;
 
@@ -44,23 +45,24 @@ like $@, qr/Invalid MongoDB connection string/, 'right error';
 $mango = Mango->new('mongodb://127.0.0.1,127.0.0.1:5000');
 is_deeply $mango->hosts, [['127.0.0.1'], ['127.0.0.1', 5000]], 'right hosts';
 
-# Blocking CRUD
+# Cleanup before start
 $mango = Mango->new($ENV{TEST_ONLINE});
 my $collection = $mango->db->collection('connection_test');
-$collection->drop;
+$collection->drop
+  if first { $_ eq 'connection_test' } @{$mango->db->collection_names};
+
+# Blocking CRUD
 my $oid = $collection->insert({foo => 'bar'});
 isa_ok $oid, 'Mango::BSON::ObjectID', 'right reference';
 my $doc = $collection->find_one({foo => 'bar'});
 is_deeply $doc, {_id => $oid, foo => 'bar'}, 'right document';
 $doc->{foo} = 'yada';
-is $collection->update({foo => 'bar'}, $doc)->{n}, 1, 'one document updated';
+is $collection->update({foo => 'bar'}, $doc), 1, 'one document updated';
 $doc = $collection->find_one($oid);
 is_deeply $doc, {_id => $oid, foo => 'yada'}, 'right document';
-is $collection->remove->{n}, 1, 'one document removed';
+is $collection->remove, 1, 'one document removed';
 
 # Non-blocking CRUD
-$mango      = Mango->new($ENV{TEST_ONLINE});
-$collection = $mango->db->collection('connection_test');
 my ($fail, $created, $updated, $found, $removed);
 my $delay = Mojo::IOLoop->delay(
   sub {
@@ -80,9 +82,9 @@ my $delay = Mojo::IOLoop->delay(
     $collection->update(({foo => 'bar'}, $doc) => $delay->begin);
   },
   sub {
-    my ($delay, $err, $doc) = @_;
+    my ($delay, $err, $num) = @_;
     $fail ||= $err;
-    $updated = $doc->{n};
+    $updated = $num;
     $collection->find_one($created => $delay->begin);
   },
   sub {
@@ -92,9 +94,9 @@ my $delay = Mojo::IOLoop->delay(
     $collection->remove($delay->begin);
   },
   sub {
-    my ($delay, $err, $doc) = @_;
+    my ($delay, $err, $num) = @_;
     $fail ||= $err;
-    $removed = $doc->{n};
+    $removed = $num;
   }
 );
 $delay->wait;

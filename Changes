@@ -1,4 +1,13 @@
 
+0.04  2013-02-10
+  - Added collection_names method to Mango::Database.
+  - Added aggregate, build_index_name, find_and_modify map_reduce and save
+    methods to Mango::Collection.
+  - Added distinct method to Mango::Cursor.
+  - Changed remove and update methods in Mango::Collection to return the
+    number of documents affected.
+  - Fixed exception handling for commands.
+
 0.03  2013-02-09
   - Added hint, snapshot and tailable attributes to Mango::Cursor.
   - Added create, drop and ensure_index methods to Mango::Collection.
