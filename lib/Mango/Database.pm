@@ -2,7 +2,7 @@ package Mango::Database;
 use Mojo::Base -base;
 
 use Carp 'croak';
-use Mango::BSON 'bson_doc';
+use Mango::BSON qw(bson_code bson_doc);
 use Mango::Collection;
 
 has [qw(mango name)];
@@ -19,7 +19,7 @@ sub collection_names {
   my $collection = $self->collection('system.namespaces');
 
   # Non-blocking
-  return $collection->find({})->all(
+  return $collection->find->all(
     sub {
       my ($cursor, $err, $docs) = @_;
       $self->$cb($err, [map { substr $_->{name}, $len + 1 } @$docs]);
@@ -27,7 +27,7 @@ sub collection_names {
   ) if $cb;
 
   # Blocking
-  my $docs = $collection->find({})->all;
+  my $docs = $collection->find->all;
   return [map { substr $_->{name}, $len + 1 } @$docs];
 }
 
@@ -43,7 +43,7 @@ sub command {
     $command => sub {
       my ($collection, $err, $doc) = @_;
       $err ||= $protocol->command_error({docs => [$doc]});
-      $self->$cb($err, $doc);
+      $self->$cb($err, $doc // {});
     }
   ) if $cb;
 
@@ -53,7 +53,11 @@ sub command {
   return $doc;
 }
 
+sub stats { shift->command(bson_doc(dbstats => 1), @_) }
+
 1;
+
+=encoding utf8
 
 =head1 NAME
 
@@ -122,6 +126,19 @@ non-blocking.
 
   $db->command(('getLastError', {w => 2}) => sub {
     my ($db, $err, $doc) = @_;
+    ...
+  });
+  Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
+
+=head2 stats
+
+  my $stats = $db->stats;
+
+Get database statistics. You can also append a callback to perform operation
+non-blocking.
+
+  $db->stats(sub {
+    my ($db, $err, $stats) = @_;
     ...
   });
   Mojo::IOLoop->start unless Mojo::IOLoop->is_running;

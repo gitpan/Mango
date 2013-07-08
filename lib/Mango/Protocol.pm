@@ -148,7 +148,7 @@ sub parse_reply {
   my $op = decode_int32(substr $msg, 0, 4, '');
   return undef unless $op == REPLY;
 
-  # FLags
+  # Flags
   my $flags = {};
   my $vec = substr $msg, 0, 4, '';
   $flags->{cursor_not_found} = vec $vec, 0, 1;
@@ -188,6 +188,8 @@ sub _build_header {
 }
 
 1;
+
+=encoding utf8
 
 =head1 NAME
 
@@ -261,7 +263,7 @@ Generate next id.
 
 =head2 parse_reply
 
-  my $reply = $protocol->parse_reply(\$string);
+  my $reply = $protocol->parse_reply(\$str);
 
 Extract and parse C<reply> message.
 

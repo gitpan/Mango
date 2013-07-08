@@ -53,7 +53,7 @@ $collection->drop
 
 # Blocking CRUD
 my $oid = $collection->insert({foo => 'bar'});
-isa_ok $oid, 'Mango::BSON::ObjectID', 'right reference';
+isa_ok $oid, 'Mango::BSON::ObjectID', 'right class';
 my $doc = $collection->find_one({foo => 'bar'});
 is_deeply $doc, {_id => $oid, foo => 'bar'}, 'right document';
 $doc->{foo} = 'yada';
@@ -101,9 +101,24 @@ my $delay = Mojo::IOLoop->delay(
 );
 $delay->wait;
 ok !$fail, 'no error';
-isa_ok $created, 'Mango::BSON::ObjectID', 'right reference';
+isa_ok $created, 'Mango::BSON::ObjectID', 'right class';
 is $updated, 1, 'one document updated';
 is_deeply $found, {_id => $created, foo => 'yada'}, 'right document';
 is $removed, 1, 'one document removed';
+
+# Mixed parallel operations
+$collection->insert({test => $_}) for 1 .. 3;
+$delay = Mojo::IOLoop->delay;
+$collection->find_one({test => $_} => $delay->begin) for 1 .. 3;
+ok $mango->is_active, 'operations in progress';
+my @results = $delay->wait;
+ok !$mango->is_active, 'no operations in progress';
+ok !$results[0], 'no error';
+is $results[1]{test}, 1, 'right result';
+ok !$results[2], 'no error';
+is $results[3]{test}, 2, 'right result';
+ok !$results[4], 'no error';
+is $results[5]{test}, 3, 'right result';
+is $collection->remove, 3, 'three documents removed';
 
 done_testing();

@@ -4,7 +4,7 @@
       "Sebastian Riedel <sri@cpan.org>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "ExtUtils::MakeMaker version 6.64, CPAN::Meta::Converter version 2.120921",
+   "generated_by" : "ExtUtils::MakeMaker version 6.68, CPAN::Meta::Converter version 2.131560",
    "license" : [
       "artistic_2"
    ],
@@ -33,7 +33,7 @@
       },
       "runtime" : {
          "requires" : {
-            "Mojolicious" : "3.84",
+            "Mojolicious" : "4.0",
             "perl" : "5.010001"
          }
       }
@@ -52,5 +52,5 @@
       },
       "x_MailingList" : "http://groups.google.com/group/mojolicious"
    },
-   "version" : "0.04"
+   "version" : "0.05"
 }

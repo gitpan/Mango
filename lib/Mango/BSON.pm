@@ -1,9 +1,9 @@
 package Mango::BSON;
 use Mojo::Base -strict;
 
-use Carp 'croak';
 use re 'regexp_pattern';
 use B;
+use Carp 'croak';
 use Exporter 'import';
 use Mango::BSON::Binary;
 use Mango::BSON::Code;
@@ -138,8 +138,8 @@ sub _decode_binary {
 
 sub _decode_cstring {
   my $bsonref = shift;
-  (my $string, $$bsonref) = unpack 'Z*a*', $$bsonref;
-  return decode 'UTF-8', $string;
+  $$bsonref =~ s/^([^\x00]*)\x00//;
+  return decode 'UTF-8', $1;
 }
 
 sub _decode_doc {
@@ -153,10 +153,8 @@ sub _decode_doc {
     # Null byte (end of document)
     last if $type eq "\x00";
 
-    # Value with valid name
     my $name = _decode_cstring($bsonref);
-    my $value = _decode_value($type, $bsonref);
-    $doc->{$name} = $value if length $name;
+    $doc->{$name} = _decode_value($type, $bsonref);
   }
 
   return $doc;
@@ -224,7 +222,7 @@ sub _decode_value {
     if $type eq TIMESTAMP;
 
   # Unknown
-  return undef;
+  croak 'Unknown BSON type';
 }
 
 sub _encode_binary {
@@ -288,8 +286,8 @@ sub _encode_object {
 }
 
 sub _encode_string {
-  my $string = encode('UTF-8', shift) . "\x00";
-  return encode_int32(length $string) . $string;
+  my $str = encode('UTF-8', shift) . "\x00";
+  return encode_int32(length $str) . $str;
 }
 
 sub _encode_value {
@@ -337,11 +335,9 @@ sub _encode_value {
 
   # Double
   my $flags = B::svref_2object(\$value)->FLAGS;
-  if ($flags & B::SVp_NOK && !($flags & B::SVp_POK)) {
-    return DOUBLE . $e . pack('d<', $value);
-  }
+  return DOUBLE . $e . pack('d<', $value) if $flags & B::SVp_NOK;
 
-  elsif ($flags & B::SVp_IOK && !($flags & B::SVp_POK)) {
+  if ($flags & B::SVp_IOK) {
 
     # Int32
     return INT32 . $e . encode_int32($value)
@@ -362,6 +358,8 @@ package Mango::BSON::_MinKey;
 
 1;
 
+=encoding utf8
+
 =head1 NAME
 
 Mango::BSON - BSON
@@ -377,15 +375,22 @@ Mango::BSON - BSON
 
 L<Mango::BSON> is a minimalistic implementation of L<http://bsonspec.org>.
 
+In addition to a bunch of custom BSON data types it supports normal Perl data
+types like C<Scalar>, C<Regexp>, C<undef>, C<Array> reference, C<Hash>
+reference and will try to call the C<TO_JSON> method on blessed references, or
+stringify them if it doesn't exist. C<Scalar> references will be used to
+generate booleans, based on if their values are true or false.
+
 =head1 FUNCTIONS
 
 L<Mango::BSON> implements the following functions.
 
 =head2 bson_bin
 
-  my $generic = bson_bin $bytes;
+  my $bin = bson_bin $bytes;
 
-Create new BSON element of the binary type.
+Create new BSON element of the binary type, defaults to the C<generic> binary
+subtype.
 
   # Function
   bson_bin($bytes)->type('function');
@@ -416,9 +421,10 @@ Decode BSON into Perl data structures.
 
 =head2 bson_doc
 
+  my $doc = bson_doc;
   my $doc = bson_doc foo => 'bar', baz => 23;
 
-Create new BSON document.
+Create new BSON document, defaults to an empty ordered hash.
 
 =head2 bson_encode
 
@@ -456,14 +462,16 @@ Create new BSON element of the min key type.
   my $oid = bson_oid;
   my $oid = bson_oid '1a2b3c4e5f60718293a4b5c6';
 
-Create new BSON element of the object id type.
+Create new BSON element of the object id type, defaults to generating a new
+unique object id.
 
 =head2 bson_time
 
   my $now  = bson_time;
   my $time = bson_time time * 1000;
 
-Create new BSON element of the UTC datetime type.
+Create new BSON element of the UTC datetime type, defaults to milliseconds
+since the UNIX epoch.
 
 =head2 bson_true
 

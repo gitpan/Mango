@@ -2,7 +2,7 @@ package Mango::Collection;
 use Mojo::Base -base;
 
 use Carp 'croak';
-use Mango::BSON qw(bson_doc bson_oid bson_true);
+use Mango::BSON qw(bson_code bson_doc bson_oid bson_true);
 use Mango::Cursor;
 
 has [qw(db name)];
@@ -25,6 +25,12 @@ sub create {
 
 sub drop { $_[0]->_command(bson_doc(drop => $_[0]->name), undef, $_[1]) }
 
+sub drop_index {
+  my ($self, $name) = (shift, shift);
+  return $self->_command(bson_doc(dropIndexes => $self->name, index => $name),
+    undef, @_);
+}
+
 sub ensure_index {
   my ($self, $spec) = (shift, shift);
   my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
@@ -44,7 +50,7 @@ sub ensure_index {
 
 sub find {
   my ($self, $query) = @_;
-  return Mango::Cursor->new(collection => $self, query => $query);
+  return Mango::Cursor->new(collection => $self, query => $query // {});
 }
 
 sub find_and_modify {
@@ -67,6 +73,19 @@ sub find_one {
 }
 
 sub full_name { join '.', $_[0]->db->name, $_[0]->name }
+
+sub index_information {
+  my ($self, $cb) = @_;
+
+  # Non-blocking
+  my $collection = $self->db->collection('system.indexes');
+  my $cursor = $collection->find({ns => $self->full_name})->fields({ns => 0});
+  return $cursor->all(sub { shift; $self->$cb(shift, _indexes(shift)) })
+    if $cb;
+
+  # Blocking
+  return _indexes($cursor->all);
+}
 
 sub insert {
   my ($self, $docs) = @_;
@@ -97,8 +116,8 @@ sub map_reduce {
   my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
   my $command = bson_doc
     mapreduce => $self->name,
-    map       => $map,
-    reduce    => $reduce,
+    map       => ref $map ? $map : bson_code($map),
+    reduce    => ref $reduce ? $reduce : bson_code($reduce),
     %{shift // {}};
 
   # Non-blocking
@@ -139,6 +158,8 @@ sub save {
   $self->update(@args);
   return $doc->{_id};
 }
+
+sub stats { $_[0]->_command(bson_doc(collstats => $_[0]->name), undef, $_[1]) }
 
 sub update {
   my ($self, $query, $update) = (shift, shift, shift);
@@ -183,7 +204,15 @@ sub _handle {
   return $reply->{docs}[0]{n};
 }
 
+sub _indexes {
+  my $indexes = bson_doc;
+  if (my $docs = shift) { $indexes->{delete $_->{name}} = $_ for @$docs }
+  return $indexes;
+}
+
 1;
+
+=encoding utf8
 
 =head1 NAME
 
@@ -274,6 +303,18 @@ non-blocking.
   });
   Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
 
+=head2 drop_index
+
+  $collection->drop_index('foo');
+
+Drop index. You can also append a callback to perform operation non-blocking.
+
+  $collection->drop_index(foo => sub {
+    my ($collection, $err) = @_;
+    ...
+  });
+  Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
+
 =head2 ensure_index
 
   $collection->ensure_index(bson_doc(foo => 1, bar => -1));
@@ -281,7 +322,7 @@ non-blocking.
   $collection->ensure_index({foo => 1}, {unique => bson_true});
 
 Make sure an index exists, the order of keys matters for compound indexes,
-additional option will be passed along to the server verbatim. You can also
+additional options will be passed along to the server verbatim. You can also
 append a callback to perform operation non-blocking.
 
   $collection->ensure_index(({foo => 1}, {unique => bson_true}) => sub {
@@ -292,6 +333,7 @@ append a callback to perform operation non-blocking.
 
 =head2 find
 
+  my $cursor = $collection->find;
   my $cursor = $collection->find({foo => 'bar'});
 
 Get L<Mango::Cursor> object for query.
@@ -331,6 +373,19 @@ non-blocking.
 
 Full name of this collection.
 
+=head2 index_information
+
+  my $info = $collection->index_information;
+
+Get index information for collection. You can also append a callback to
+perform operation non-blocking.
+
+  $collection->index_information(sub {
+    my ($collection, $err, $info) = @_;
+    ...
+  });
+  Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
+
 =head2 insert
 
   my $oid  = $collection->insert({foo => 'bar'});
@@ -347,17 +402,16 @@ to perform operation non-blocking.
 
 =head2 map_reduce
 
-  my $myresults = $collection->map_reduce(
-    bson_code($map), bson_code($reduce), {out => 'myresults'});
+  my $foo  = $collection->map_reduce($map, $reduce, {out => 'foo'});
+  my $docs = $collection->map_reduce($map, $reduce, {out => {inline => 1}});
   my $docs = $collection->map_reduce(
     bson_code($map), bson_code($reduce), {out => {inline => 1}});
 
-Perform map/reduce operation on this collection, additional option will be
+Perform map/reduce operation on this collection, additional options will be
 passed along to the server verbatim. You can also append a callback to perform
 operation non-blocking.
 
-  my $out = {out => {inline => 1}};
-  $collection->map_reduce((bson_code($map), bson_code($reduce), $out) => sub {
+  $collection->map_reduce(($map, $reduce, {out => {inline => 1}}) => sub {
       my ($collection, $err, $docs) = @_;
       ...
     }
@@ -398,6 +452,19 @@ operation non-blocking.
 
   $collection->save({foo => 'bar'} => sub {
     my ($collection, $err, $oid) = @_;
+    ...
+  });
+  Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
+
+=head2 stats
+
+  my $stats = $collection->stats;
+
+Get collection statistics. You can also append a callback to perform operation
+non-blocking.
+
+  $collection->stats(sub {
+    my ($collection, $err, $stats) = @_;
     ...
   });
   Mojo::IOLoop->start unless Mojo::IOLoop->is_running;

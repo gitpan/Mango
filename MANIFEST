@@ -1,4 +1,5 @@
 Changes
+CONTRIBUTING.md
 lib/Mango.pm
 lib/Mango/BSON.pm
 lib/Mango/BSON/Binary.pm
@@ -14,6 +15,7 @@ lib/Mango/Protocol.pm
 LICENSE
 Makefile.PL
 MANIFEST			This list of files
+MANIFEST.SKIP
 README.md
 t/bson.t
 t/collection.t
