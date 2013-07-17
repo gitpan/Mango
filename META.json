@@ -1,5 +1,5 @@
 {
-   "abstract" : "Pure-Perl non-blocking I/O MongoDB client",
+   "abstract" : "Pure-Perl non-blocking I/O MongoDB driver",
    "author" : [
       "Sebastian Riedel <sri@cpan.org>"
    ],
@@ -52,5 +52,5 @@
       },
       "x_MailingList" : "http://groups.google.com/group/mojolicious"
    },
-   "version" : "0.05"
+   "version" : "0.06"
 }

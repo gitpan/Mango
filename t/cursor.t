@@ -8,7 +8,7 @@ use Mojo::IOLoop;
 plan skip_all => 'set TEST_ONLINE to enable this test'
   unless $ENV{TEST_ONLINE};
 
-# Cleanup before start
+# Clean up before start
 my $mango      = Mango->new($ENV{TEST_ONLINE});
 my $collection = $mango->db->collection('cursor_test');
 $collection->drop
@@ -40,7 +40,7 @@ is $docs->[1]{test}, 2, 'right document';
 is $docs->[2]{test}, 3, 'right document';
 
 # Fetch two documents blocking
-$docs = $collection->find->limit(2)->sort({test => 1})->all;
+$docs = $collection->find->limit(-2)->sort({test => 1})->all;
 is scalar @$docs, 2, 'two documents';
 is $docs->[0]{test}, 1, 'right document';
 is $docs->[1]{test}, 2, 'right document';

@@ -23,7 +23,7 @@ has protocol        => sub { Mango::Protocol->new };
 has w               => 1;
 has wtimeout        => 1000;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 # Operations with reply
 for my $name (qw(get_more query)) {
@@ -101,8 +101,9 @@ sub db {
 
 sub is_active {
   my $self = shift;
-  return !!(@{$self->{queue} || []}
-    || grep { $_->{last} } values %{$self->{connections} || {}});
+  return 1 if @{$self->{queue} || []};
+  return !!grep { $_->{last} && !$_->{start} }
+    values %{$self->{connections} || {}};
 }
 
 sub kill_cursors {
@@ -319,7 +320,7 @@ sub _write {
 
 =head1 NAME
 
-Mango - Pure-Perl non-blocking I/O MongoDB client
+Mango - Pure-Perl non-blocking I/O MongoDB driver
 
 =head1 SYNOPSIS
 
@@ -372,7 +373,7 @@ Mango - Pure-Perl non-blocking I/O MongoDB client
 
 =head1 DESCRIPTION
 
-L<Mango> is a pure-Perl non-blocking I/O MongoDB client, optimized for use
+L<Mango> is a pure-Perl non-blocking I/O MongoDB driver, optimized for use
 with the L<Mojolicious> real-time web framework, and with multiple event loop
 support.
 
@@ -382,10 +383,14 @@ L<official documentation|http://docs.mongodb.org>.
 Note that this whole distribution is EXPERIMENTAL and will change without
 warning!
 
-Many features are still incomplete or missing, so you should wait for a stable
+Most of the API is not changing much anymore, but you should wait for a stable
 1.0 release before using any of the modules in this distribution in a
 production environment. Unsafe operations are not supported, so far this is
 considered a feature.
+
+Many arguments passed to methods as well as values of attributes get
+serialized to BSON with L<Mango::BSON>, which provides many helper functions
+you can use to generate data types that are not available natively in Perl.
 
 For better scalability (epoll, kqueue) and to provide IPv6 as well as TLS
 support, the optional modules L<EV> (4.0+), L<IO::Socket::IP> (0.16+) and

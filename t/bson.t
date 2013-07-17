@@ -19,7 +19,10 @@ $doc->{d} = 4;
 $doc->{e} = 5;
 is_deeply [keys %$doc],   [qw(a c b d e)], 'ordered keys';
 is_deeply [values %$doc], [qw(1 2 3 4 5)], 'ordered values';
-delete $doc->{c};
+ok exists $doc->{c}, 'value does exist';
+is delete $doc->{c}, 2, 'right value';
+ok !exists $doc->{x}, 'value does not exist';
+is delete $doc->{x}, undef, 'no value';
 is_deeply [keys %$doc],   [qw(a b d e)], 'ordered keys';
 is_deeply [values %$doc], [qw(1 3 4 5)], 'ordered values';
 $doc->{d} = 6;
@@ -268,6 +271,13 @@ is_deeply $doc, {foo => bson_bin('12345')->type('user_defined')},
   'right document';
 is bson_encode($doc), $bytes, 'successful roundtrip';
 
+# Unicode roundtrip
+$bytes = "\x21\x00\x00\x00\x02\xe2\x98\x83\x00\x13\x00\x00\x00\x49\x20\xe2\x99"
+  . "\xa5\x20\x4d\x6f\x6a\x6f\x6c\x69\x63\x69\x6f\x75\x73\x21\x00\x00";
+$doc = bson_decode($bytes);
+is_deeply $doc, {'☃' => 'I ♥ Mojolicious!'}, 'right document';
+is bson_encode($doc), $bytes, 'successful roundtrip';
+
 # Blessed reference
 $bytes = bson_encode {test => b('test')};
 is_deeply bson_decode($bytes), {test => 'test'}, 'successful roundtrip';
@@ -307,10 +317,10 @@ my $num = 3;
 my $str = "$num";
 is_deeply bson_decode(bson_encode {test => [$num, $str]}), {test => [3, "3"]},
   'upgraded number detected';
-$num = 3.21;
+$num = 1.5;
 $str = "$num";
 is_deeply bson_decode(bson_encode {test => [$num, $str]}),
-  {test => [3.21, "3.21"]}, 'upgraded number detected';
+  {test => [1.5, "1.5"]}, 'upgraded number detected';
 $str = '0 but true';
 $num = 1 + $str;
 is_deeply bson_decode(bson_encode {test => [$num, $str]}), {test => [1, 0]},

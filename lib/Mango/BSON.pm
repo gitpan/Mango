@@ -12,7 +12,6 @@ use Mango::BSON::ObjectID;
 use Mango::BSON::Time;
 use Mango::BSON::Timestamp;
 use Mojo::JSON;
-use Mojo::Util qw(decode encode);
 use Scalar::Util 'blessed';
 
 my @BSON = (
@@ -94,10 +93,7 @@ sub bson_encode {
 
 sub bson_false {$FALSE}
 
-sub bson_length {
-  my $bson = shift;
-  return length($bson) < 4 ? undef : decode_int32(substr $bson, 0, 4);
-}
+sub bson_length { length $_[0] < 4 ? undef : decode_int32(substr $_[0], 0, 4) }
 
 sub bson_max {$MAXKEY}
 
@@ -113,10 +109,14 @@ sub bson_ts {
 
 sub bson_true {$TRUE}
 
-sub decode_int32 { 0 + unpack 'l<', shift }
-sub decode_int64 { 0 + unpack 'q<', shift }
+sub decode_int32 { unpack 'l<', shift }
+sub decode_int64 { unpack 'q<', shift }
 
-sub encode_cstring { pack 'Z*', encode('UTF-8', shift) }
+sub encode_cstring {
+  my $str = shift;
+  utf8::encode $str;
+  return pack 'Z*', $str;
+}
 
 sub encode_int32 { pack 'l<', shift }
 sub encode_int64 { pack 'q<', shift }
@@ -139,7 +139,9 @@ sub _decode_binary {
 sub _decode_cstring {
   my $bsonref = shift;
   $$bsonref =~ s/^([^\x00]*)\x00//;
-  return decode 'UTF-8', $1;
+  my $str = $1;
+  utf8::decode $str;
+  return $str;
 }
 
 sub _decode_doc {
@@ -162,9 +164,13 @@ sub _decode_doc {
 
 sub _decode_string {
   my $bsonref = shift;
+
   my $len = decode_int32(substr $$bsonref, 0, 4, '');
   substr $$bsonref, $len - 1, 1, '';
-  return decode 'UTF-8', substr($$bsonref, 0, $len - 1, '');
+  my $str = substr $$bsonref, 0, $len - 1, '';
+  utf8::decode $str;
+
+  return $str;
 }
 
 sub _decode_value {
@@ -178,7 +184,7 @@ sub _decode_value {
     if $type eq OBJECT_ID;
 
   # Double/Int32/Int64
-  return 0 + unpack 'd<', substr $$bsonref, 0, 8, '' if $type eq DOUBLE;
+  return unpack 'd<', substr $$bsonref, 0, 8, '' if $type eq DOUBLE;
   return decode_int32(substr $$bsonref, 0, 4, '') if $type eq INT32;
   return decode_int64(substr $$bsonref, 0, 8, '') if $type eq INT64;
 
@@ -286,8 +292,9 @@ sub _encode_object {
 }
 
 sub _encode_string {
-  my $str = encode('UTF-8', shift) . "\x00";
-  return encode_int32(length $str) . $str;
+  my $str = shift;
+  utf8::encode $str;
+  return encode_int32(length($str) + 1) . "$str\x00";
 }
 
 sub _encode_value {
@@ -389,8 +396,8 @@ L<Mango::BSON> implements the following functions.
 
   my $bin = bson_bin $bytes;
 
-Create new BSON element of the binary type, defaults to the C<generic> binary
-subtype.
+Create new BSON element of the binary type with L<Mango::BSON::Binary>,
+defaults to the C<generic> binary subtype.
 
   # Function
   bson_bin($bytes)->type('function');
@@ -408,7 +415,7 @@ subtype.
 
   my $code = bson_code 'function () {}';
 
-Create new BSON element of the code type.
+Create new BSON element of the code type with L<Mango::BSON::Code>.
 
   # With scope
   bson_code('function () {}')->scope({foo => 'bar'});
@@ -424,7 +431,14 @@ Decode BSON into Perl data structures.
   my $doc = bson_doc;
   my $doc = bson_doc foo => 'bar', baz => 23;
 
-Create new BSON document, defaults to an empty ordered hash.
+Create new BSON document with L<Mango::BSON::Document>, which can also be used
+as a generic ordered hash.
+
+  # Order is preserved
+  my $hash = bson_doc one => 1, two => 2, three => 3;
+  $hash->{four} = 4;
+  delete $hash->{two};
+  say for keys %$hash;
 
 =head2 bson_encode
 
@@ -462,16 +476,16 @@ Create new BSON element of the min key type.
   my $oid = bson_oid;
   my $oid = bson_oid '1a2b3c4e5f60718293a4b5c6';
 
-Create new BSON element of the object id type, defaults to generating a new
-unique object id.
+Create new BSON element of the object id type with L<Mango::BSON::ObjectID>,
+defaults to generating a new unique object id.
 
 =head2 bson_time
 
   my $now  = bson_time;
   my $time = bson_time time * 1000;
 
-Create new BSON element of the UTC datetime type, defaults to milliseconds
-since the UNIX epoch.
+Create new BSON element of the UTC datetime type with L<Mango::BSON::Time>,
+defaults to milliseconds since the UNIX epoch.
 
 =head2 bson_true
 
@@ -483,7 +497,7 @@ Create new BSON element of the boolean type true.
 
   my $timestamp = bson_ts 23, 24;
 
-Create new BSON element of the timestamp type.
+Create new BSON element of the timestamp type with L<Mango::BSON::Timestamp>.
 
 =head2 decode_int32
 
