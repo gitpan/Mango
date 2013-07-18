@@ -1,6 +1,7 @@
 package Mango::GridFS::Writer;
 use Mojo::Base -base;
 
+use Carp 'croak';
 use List::Util 'first';
 use Mango::BSON qw(bson_bin bson_doc bson_oid bson_time bson_true);
 use Mojo::IOLoop;
@@ -11,11 +12,16 @@ has [qw(content_type filename gridfs metadata)];
 sub close {
   my ($self, $cb) = @_;
 
+  # Already closed
+  if ($self->{closed}++) {
+    my $files_id = $self->{files_id};
+    return $files_id unless $cb;
+    return Mojo::IOLoop->timer(0 => sub { $self->$cb(undef, $files_id) });
+  }
+
   my @index   = (bson_doc(files_id => 1, n => 1), {unique => bson_true});
   my $gridfs  = $self->gridfs;
-  my $command = bson_doc
-    filemd5 => $self->{files_id},
-    root    => $gridfs->prefix;
+  my $command = bson_doc filemd5 => $self->{files_id}, root => $gridfs->prefix;
 
   # Blocking
   my $files = $gridfs->files;
@@ -47,15 +53,20 @@ sub close {
       return $self->$cb($err) if $err;
       $files->insert($self->_meta($doc->{md5}) => $delay->begin);
     },
-    sub {
-      my ($delay, $err) = @_;
-      $self->$cb($err, $self->{files_id});
-    }
+    sub { shift; $self->$cb(shift, $self->{files_id}) }
   );
 }
 
+sub is_closed { !!shift->{closed} }
+
 sub write {
   my ($self, $chunk, $cb) = @_;
+
+  # Already closed
+  if ($self->is_closed) {
+    croak 'File already closed' unless $cb;
+    return Mojo::IOLoop->timer(0 => sub { $self->$cb('File already closed') });
+  }
 
   $self->{buffer} .= $chunk;
   $self->{len} += length $chunk;
@@ -185,6 +196,12 @@ Close file. You can also append a callback to perform operation non-blocking.
     ...
   });
   Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
+
+=head2 is_closed
+
+  my $success = $writer->is_closed;
+
+Check if file has been closed.
 
 =head2 write
 
