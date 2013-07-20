@@ -16,6 +16,7 @@ is_deeply $mango->credentials, [], 'no credentials';
 is $mango->j,        0,    'right j value';
 is $mango->w,        1,    'right w value';
 is $mango->wtimeout, 1000, 'right wtimeout value';
+is $mango->backlog,  0,    'no operations waiting';
 
 # Simple connection string
 $mango = Mango->new('mongodb://127.0.0.1:3000');
@@ -53,6 +54,7 @@ $collection->drop
 
 # Blocking CRUD
 my $oid = $collection->insert({foo => 'bar'});
+is $mango->backlog, 0, 'no operations waiting';
 isa_ok $oid, 'Mango::BSON::ObjectID', 'right class';
 my $doc = $collection->find_one({foo => 'bar'});
 is_deeply $doc, {_id => $oid, foo => 'bar'}, 'right document';
@@ -63,11 +65,12 @@ is_deeply $doc, {_id => $oid, foo => 'yada'}, 'right document';
 is $collection->remove, 1, 'one document removed';
 
 # Non-blocking CRUD
-my ($fail, $created, $updated, $found, $removed);
+my ($fail, $backlog, $created, $updated, $found, $removed);
 my $delay = Mojo::IOLoop->delay(
   sub {
     my $delay = shift;
     $collection->insert({foo => 'bar'} => $delay->begin);
+    $backlog = $collection->db->mango->backlog;
   },
   sub {
     my ($delay, $err, $oid) = @_;
@@ -101,8 +104,9 @@ my $delay = Mojo::IOLoop->delay(
 );
 $delay->wait;
 ok !$fail, 'no error';
+is $backlog,     1,                       'one operation waiting';
 isa_ok $created, 'Mango::BSON::ObjectID', 'right class';
-is $updated, 1, 'one document updated';
+is $updated,     1,                       'one document updated';
 is_deeply $found, {_id => $created, foo => 'yada'}, 'right document';
 is $removed, 1, 'one document removed';
 
@@ -122,11 +126,14 @@ is $collection->remove, 1, 'one document removed';
 
 # Mixed parallel operations
 $collection->insert({test => $_}) for 1 .. 3;
+is $mango->backlog, 0, 'no operations waiting';
 $delay = Mojo::IOLoop->delay;
 $collection->find_one({test => $_} => $delay->begin) for 1 .. 3;
-ok $mango->is_active, 'operations in progress';
+is $mango->backlog, 3, 'three operations waiting';
+eval { $collection->find_one({test => 1}) };
+like $@, qr/^Non-blocking operations in progress/, 'right error';
 my @results = $delay->wait;
-ok !$mango->is_active, 'no operations in progress';
+is $mango->backlog, 0, 'no operations waiting';
 ok !$results[0], 'no error';
 is $results[1]{test}, 1, 'right result';
 ok !$results[2], 'no error';

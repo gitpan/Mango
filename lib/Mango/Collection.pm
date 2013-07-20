@@ -48,10 +48,7 @@ sub ensure_index {
   $collection->insert($doc);
 }
 
-sub find {
-  my ($self, $query) = @_;
-  return Mango::Cursor->new(collection => $self, query => $query // {});
-}
+sub find { Mango::Cursor->new(collection => shift, query => shift // {}) }
 
 sub find_and_modify {
   my ($self, $opts) = (shift, shift);
@@ -114,7 +111,7 @@ sub insert {
 sub map_reduce {
   my ($self, $map, $reduce) = (shift, shift, shift);
   my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
-  my $command = bson_doc
+  my $mr = bson_doc
     mapreduce => $self->name,
     map       => ref $map ? $map : bson_code($map),
     reduce    => ref $reduce ? $reduce : bson_code($reduce),
@@ -123,7 +120,7 @@ sub map_reduce {
   # Non-blocking
   my $db = $self->db;
   return $db->command(
-    $command => sub {
+    $mr => sub {
       my ($db, $err, $doc) = @_;
       my $result
         = $doc->{result} ? $db->collection($doc->{result}) : $doc->{results};
@@ -132,7 +129,7 @@ sub map_reduce {
   ) if $cb;
 
   # Blocking
-  my $doc = $db->command($command);
+  my $doc = $db->command($mr);
   return $doc->{result} ? $db->collection($doc->{result}) : $doc->{results};
 }
 
@@ -151,11 +148,12 @@ sub save {
   return $self->insert($doc, $cb) unless $doc->{_id};
 
   # Update non-blocking
-  my @args = ({_id => $doc->{_id}}, $doc, {upsert => 1});
-  return $self->update(@args => sub { shift->$cb(shift, $doc->{_id}) }) if $cb;
+  my @update = ({_id => $doc->{_id}}, $doc, {upsert => 1});
+  return $self->update(@update => sub { shift->$cb(shift, $doc->{_id}) })
+    if $cb;
 
   # Update blocking
-  $self->update(@args);
+  $self->update(@update);
   return $doc->{_id};
 }
 

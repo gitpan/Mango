@@ -5,7 +5,7 @@ use Mango::BSON 'bson_doc';
 use Mojo::IOLoop;
 
 has [qw(batch_size limit skip)] => 0;
-has [qw(collection hint id snapshot sort tailable)];
+has [qw(collection hint id max_scan snapshot sort tailable)];
 has [qw(fields query)] => sub { {} };
 
 sub all {
@@ -24,17 +24,19 @@ sub build_query {
   my ($self, $explain) = @_;
 
   my $query    = $self->query;
-  my $sort     = $self->sort;
   my $hint     = $self->hint;
+  my $max_scan = $self->max_scan;
   my $snapshot = $self->snapshot;
+  my $sort     = $self->sort;
 
-  return $query unless $snapshot || $hint || $sort || $explain;
+  return $query unless $explain || $hint || $max_scan || $snapshot || $sort;
 
   $query = {'$query' => $query};
-  $query->{'$explain'}  = 1     if $explain;
-  $query->{'$orderby'}  = $sort if $sort;
-  $query->{'$hint'}     = $hint if $hint;
-  $query->{'$snapshot'} = 1     if $snapshot;
+  $query->{'$explain'}  = 1         if $explain;
+  $query->{'$hint'}     = $hint     if $hint;
+  $query->{'$maxScan'}  = $max_scan if $max_scan;
+  $query->{'$snapshot'} = 1         if $snapshot;
+  $query->{'$orderby'}  = $sort     if $sort;
 
   return $query;
 }
@@ -42,9 +44,8 @@ sub build_query {
 sub clone {
   my $self  = shift;
   my $clone = $self->new;
-  $clone->$_($self->$_)
-    for qw(batch_size collection fields hint limit query skip snapshot),
-    qw(sort tailable);
+  $clone->$_($self->$_) for qw(batch_size collection fields hint limit);
+  $clone->$_($self->$_) for qw(max_scan query skip snapshot sort tailable);
   return $clone;
 }
 
@@ -82,13 +83,12 @@ sub distinct {
     key      => $key,
     query    => $self->build_query;
 
-  # Non-blocking
-  return $collection->db->command(
-    $distinct => sub { shift; $self->$cb(shift, shift->{values}) })
-    if $cb;
-
   # Blocking
-  return $collection->db->command($distinct)->{values};
+  my $db = $collection->db;
+  return $db->command($distinct)->{values} unless $cb;
+
+  # Non-blocking
+  $db->command($distinct => sub { shift; $self->$cb(shift, shift->{values}) });
 }
 
 sub explain {
@@ -179,8 +179,7 @@ sub _max {
   my $self  = shift;
   my $limit = $self->limit;
   my $size  = $self->batch_size;
-  return $size if $limit == 0;
-  return $size > $limit ? $limit : $size;
+  return $limit == 0 || $size < $limit ? $size : $limit;
 }
 
 sub _start {
@@ -189,17 +188,17 @@ sub _start {
   my $collection = $self->collection;
   my $name       = $collection->full_name;
   my $flags = $self->tailable ? {tailable_cursor => 1, await_data => 1} : {};
-  my @args  = (
+  my @query = (
     $name, $flags, $self->skip, $self->_max, $self->build_query, $self->fields
   );
 
   # Non-blocking
   return $collection->db->mango->query(
-    @args => sub { shift; $self->$cb(shift, $self->_enqueue(shift)) })
+    @query => sub { shift; $self->$cb(shift, $self->_enqueue(shift)) })
     if $cb;
 
   # Blocking
-  my $reply = $collection->db->mango->query(@args);
+  my $reply = $collection->db->mango->query(@query);
   $self->id($reply->{cursor}) if $reply;
   return $self->_enqueue($reply);
 }
@@ -270,6 +269,13 @@ Cursor id.
 
 Limit the number of documents, defaults to C<0>.
 
+=head2 max_scan
+
+  my $max = $cursor->max_scan;
+  $cursor = $cursor->max_scan(500);
+
+Limit the number of documents to scan.
+
 =head2 query
 
   my $query = $cursor->query;
@@ -295,8 +301,9 @@ Use snapshot mode.
 
   my $sort = $cursor->sort;
   $cursor  = $cursor->sort({foo => 1});
+  $cursor  = $cursor->sort(bson_doc(foo => 1, bar => -1));
 
-Sort documents.
+Sort documents, the order of keys matters.
 
 =head2 tailable
 
@@ -314,8 +321,8 @@ following new ones.
 
   my $docs = $cursor->all;
 
-Fetch all documents. You can also append a callback to perform operation
-non-blocking.
+Fetch all documents at once. You can also append a callback to perform
+operation non-blocking.
 
   $cursor->all(sub {
     my ($cursor, $err, $docs) = @_;

@@ -80,7 +80,6 @@ my $delay = Mojo::IOLoop->delay(
   }
 );
 $delay->wait;
-ok !$mango->is_active, 'no operations in progress';
 ok !$fail, 'no error';
 ok $writer->is_closed, 'file has been closed';
 $reader = $gridfs->reader;
@@ -93,7 +92,6 @@ $reader->open(
   }
 );
 Mojo::IOLoop->start;
-ok !$mango->is_active, 'no operations in progress';
 ok !$fail, 'no error';
 is $reader->filename,     'foo.txt',    'right filename';
 is $reader->content_type, 'text/plain', 'right content type';
@@ -112,7 +110,6 @@ $cb = sub {
 };
 $reader->$cb(undef, '');
 Mojo::IOLoop->start;
-ok !$mango->is_active, 'no operations in progress';
 ok !$fail, 'no error';
 is $data, 'hello world!', 'right content';
 my ($before, $after);
@@ -137,7 +134,6 @@ $delay = Mojo::IOLoop->delay(
   }
 );
 $delay->wait;
-ok !$mango->is_active, 'no operations in progress';
 ok !$fail, 'no error';
 is_deeply $before, ['foo.txt'], 'right files';
 is_deeply $after, [], 'no files';
@@ -178,7 +174,6 @@ $delay = Mojo::IOLoop->delay(
   }
 );
 $delay->wait;
-ok !$mango->is_active, 'no operations in progress';
 ok !$fail, 'no error';
 is $results[0], $one, 'right version';
 is $results[1], $two, 'right version';
@@ -205,7 +200,6 @@ $delay = Mojo::IOLoop->delay(
   }
 );
 $delay->wait;
-ok !$mango->is_active, 'no operations in progress';
 ok !$fail, 'no error';
 is $results[0], 'One', 'right content';
 is $results[1], 'Two', 'right content';
@@ -227,7 +221,6 @@ $writer->write(
   }
 );
 Mojo::IOLoop->start;
-ok !$mango->is_active, 'no operations in progress';
 like $fail, qr/^File already closed/, 'right error';
 ok $writer->is_closed, 'file is still closed';
 is $writer->close, $oid, 'right result';
@@ -241,7 +234,6 @@ $writer->close(
   }
 );
 Mojo::IOLoop->start;
-ok !$mango->is_active, 'no operations in progress';
 ok !$fail, 'no error';
 is $result, $oid, 'right result';
 ok $writer->is_closed, 'file is still closed';

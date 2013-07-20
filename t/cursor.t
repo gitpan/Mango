@@ -57,11 +57,14 @@ $cursor->sort(undef)->hint({test => 1})->snapshot(1);
 is_deeply $cursor->build_query,
   {'$query' => {test => 1}, '$hint' => {test => 1}, '$snapshot' => 1},
   'right query';
+$cursor->hint(undef)->snapshot(undef)->max_scan(500);
+is_deeply $cursor->build_query, {'$query' => {test => 1}, '$maxScan' => 500},
+  'right query';
 
 # Clone cursor
 $cursor
   = $collection->find({test => {'$exists' => 1}})->batch_size(2)->limit(3)
-  ->skip(1)->sort({test => 1})->fields({test => 1});
+  ->skip(1)->sort({test => 1})->fields({test => 1})->max_scan(100);
 my $doc = $cursor->next;
 ok defined $cursor->id, 'has a cursor id';
 ok $doc->{test}, 'right document';
@@ -73,9 +76,10 @@ is_deeply $clone->fields, {test => 1}, 'right fields';
 is_deeply $clone->hint,   {test => 1}, 'right hint value';
 is $clone->limit, 3, 'right limit';
 is_deeply $clone->query, {test => {'$exists' => 1}}, 'right query';
-is $clone->skip,     1, 'right skip value';
-is $clone->snapshot, 1, 'right snapshot value';
-is $clone->tailable, 1, 'is tailable';
+is $clone->skip,     1,   'right skip value';
+is $clone->snapshot, 1,   'right snapshot value';
+is $clone->max_scan, 100, 'right max_scan value';
+is $clone->tailable, 1,   'is tailable';
 is_deeply $clone->sort, {test => 1}, 'right sort value';
 
 # Explain blocking
@@ -97,7 +101,6 @@ $cursor->explain(
   }
 );
 Mojo::IOLoop->start;
-ok !$mango->is_active, 'no operations in progress';
 ok !$fail, 'no error';
 is $result, 1, 'one document';
 is $cursor->next->{test}, 2, 'right document';
@@ -118,7 +121,6 @@ $collection->find({test => {'$gt' => 1}})->distinct(
   }
 );
 Mojo::IOLoop->start;
-ok !$mango->is_active, 'no operations in progress';
 ok !$fail, 'no error';
 is_deeply [sort @$result], [2, 3], 'right values';
 
@@ -148,7 +150,6 @@ my $delay = Mojo::IOLoop->delay(
   }
 );
 $delay->wait;
-ok !$mango->is_active, 'no operations in progress';
 ok !$fail, 'no error';
 is_deeply \@results, [3, 0], 'right number of documents';
 
@@ -180,7 +181,6 @@ $delay  = Mojo::IOLoop->delay(
   }
 );
 $delay->wait;
-ok !$mango->is_active, 'no operations in progress';
 ok !$fail, 'no error';
 @docs = sort { $a->{test} <=> $b->{test} } @docs;
 is $docs[0]{test}, 1, 'right document';
@@ -197,7 +197,6 @@ $collection->find->batch_size(2)->all(
   }
 );
 Mojo::IOLoop->start;
-ok !$mango->is_active, 'no operations in progress';
 @docs = sort { $a->{test} <=> $b->{test} } @docs;
 is $docs[0]{test}, 1, 'right document';
 is $docs[1]{test}, 2, 'right document';
@@ -243,7 +242,6 @@ $delay  = Mojo::IOLoop->delay(
   }
 );
 $delay->wait;
-ok !$mango->is_active, 'no operations in progress';
 ok !$fail, 'no error';
 is_deeply $docs[0], $docs[1], 'found same document again';
 
@@ -273,7 +271,6 @@ $delay = Mojo::IOLoop->delay(
   }
 );
 $delay->wait;
-ok !$mango->is_active, 'no operations in progress';
 ok !$fail, 'no error';
 is $tail->{test}, 3, 'right document';
 is $tail->{_id}, $result, 'same document';

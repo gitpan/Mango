@@ -23,7 +23,7 @@ has protocol        => sub { Mango::Protocol->new };
 has w               => 1;
 has wtimeout        => 1000;
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 # Operations with reply
 for my $name (qw(get_more query)) {
@@ -46,12 +46,12 @@ for my $name (qw(delete insert update)) {
     my ($next, $msg) = $self->_build($name, $ns, @_);
     $next = $self->_id;
     $ns =~ s/\..+$/\.\$cmd/;
-    my $command = bson_doc
+    my $gle = bson_doc
       getLastError => 1,
       j            => $self->j ? bson_true : bson_false,
       w            => $self->w,
       wtimeout     => $self->wtimeout;
-    $msg .= $self->protocol->build_query($next, $ns, {}, 0, -1, $command, {});
+    $msg .= $self->protocol->build_query($next, $ns, {}, 0, -1, $gle, {});
 
     warn "-- Operation $next ($name)\n" if DEBUG;
     $self->_start({id => $next, safe => 1, msg => $msg, cb => $cb});
@@ -91,19 +91,14 @@ sub new {
   return $self;
 }
 
+sub backlog { scalar @{shift->{queue} || []} }
+
 sub db {
   my ($self, $name) = @_;
   $name //= $self->default_db;
   my $db = Mango::Database->new(mango => $self, name => $name);
   weaken $db->{mango};
   return $db;
-}
-
-sub is_active {
-  my $self = shift;
-  return 1 if @{$self->{queue} || []};
-  return !!grep { $_->{last} && !$_->{start} }
-    values %{$self->{connections} || {}};
 }
 
 sub kill_cursors {
@@ -114,6 +109,13 @@ sub kill_cursors {
   $self->_start({id => $next, safe => 0, msg => $msg, cb => $cb});
 }
 
+sub _active {
+  my $self = shift;
+  return 1 if $self->backlog;
+  return !!grep { $_->{last} && !$_->{start} }
+    values %{$self->{connections} || {}};
+}
+
 sub _auth {
   my ($self, $id, $credentials, $auth, $err, $reply) = @_;
   my ($db, $user, $pass) = @$auth;
@@ -121,10 +123,10 @@ sub _auth {
   # Run "authenticate" command with "nonce" value
   my $nonce = $reply->{docs}[0]{nonce} // '';
   my $key = md5_sum $nonce . $user . md5_sum "$user:mongo:$pass";
-  my $command
+  my $authenticate
     = bson_doc(authenticate => 1, user => $user, nonce => $nonce, key => $key);
   my $cb = sub { shift->_connected($id, $credentials) };
-  $self->_fast($id, $db, $command, $cb);
+  $self->_fast($id, $db, $authenticate, $cb);
 }
 
 sub _build {
@@ -265,7 +267,7 @@ sub _start {
 
     # Start non-blocking
     unless ($self->{nb}) {
-      croak 'Blocking operation in progress' if $self->is_active;
+      croak 'Blocking operation in progress' if $self->_active;
       warn "-- Switching to non-blocking mode\n" if DEBUG;
       $self->_cleanup;
       $self->{nb}++;
@@ -276,7 +278,7 @@ sub _start {
 
   # Start blocking
   if ($self->{nb}) {
-    croak 'Non-blocking operations in progress' if $self->is_active;
+    croak 'Non-blocking operations in progress' if $self->_active;
     warn "-- Switching to blocking mode\n" if DEBUG;
     $self->_cleanup;
     delete $self->{nb};
@@ -475,7 +477,7 @@ Protocol handler, defaults to a L<Mango::Protocol> object.
 =head2 w
 
   my $w  = $mango->w;
-  $mango = $mango->w(1);
+  $mango = $mango->w(2);
 
 Wait for all operations to have reached at least this many servers, C<1>
 indicates just primary, C<2> indicates primary and at least one secondary,
@@ -496,9 +498,15 @@ new ones.
 =head2 new
 
   my $mango = Mango->new;
-  my $mango = Mango->new('mongodb://localhost:3000/mango_test?w=2');
+  my $mango = Mango->new('mongodb://sri:s3cret@localhost:3000/test?w=2');
 
 Construct a new L<Mango> object.
+
+=head2 backlog
+
+  my $num = $mango->backlog;
+
+Number of queued operations that have not yet been assigned to a connection.
 
 =head2 db
 
@@ -546,12 +554,6 @@ can also append a callback to perform operation non-blocking.
     ...
   });
   Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
-
-=head2 is_active
-
-  my $success = $mango->is_active;
-
-Check if there are still operations in progress.
 
 =head2 kill_cursors
 
