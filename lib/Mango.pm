@@ -23,7 +23,7 @@ has protocol        => sub { Mango::Protocol->new };
 has w               => 1;
 has wtimeout        => 1000;
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 # Operations with reply
 for my $name (qw(get_more query)) {
@@ -141,6 +141,7 @@ sub _cleanup {
   return unless my $loop = $self->_loop;
 
   # Clean up connections
+  delete $self->{pid};
   my $connections = delete $self->{connections};
   $loop->remove($_) for keys %$connections;
 
@@ -174,7 +175,7 @@ sub _connect {
       $stream->on(close => sub { $self->_close($id) });
       $stream->on(error => sub { $self && $self->_error($id, pop) });
       $stream->on(read => sub { $self->_read($id, pop) });
-      $self->_connected($id, [@{$self->credentials}]);
+      $self->emit(connection => $id)->_connected($id, [@{$self->credentials}]);
     }
   );
   $self->{connections}{$id} = {start => 1};
@@ -261,6 +262,9 @@ sub _read {
 
 sub _start {
   my ($self, $op) = @_;
+
+  # Fork safety
+  $self->_cleanup unless ($self->{pid} //= $$) eq $$;
 
   # Non-blocking
   if ($op->{cb}) {
@@ -393,6 +397,8 @@ considered a feature.
 Many arguments passed to methods as well as values of attributes get
 serialized to BSON with L<Mango::BSON>, which provides many helper functions
 you can use to generate data types that are not available natively in Perl.
+All connections will be reset automatically if a new process has been forked,
+this allows multiple processes to share the same L<Mango> object safely.
 
 For better scalability (epoll, kqueue) and to provide IPv6 as well as TLS
 support, the optional modules L<EV> (4.0+), L<IO::Socket::IP> (0.16+) and
@@ -404,6 +410,15 @@ MOJO_NO_IPV6 and MOJO_NO_TLS environment variables.
 
 L<Mango> inherits all events from L<Mojo::EventEmitter> and can emit the
 following new ones.
+
+=head2 connection
+
+  $mango->on(connection => sub {
+    my ($mango, $id) = @_;
+    ...
+  });
+
+Emitted when a new connection has been established.
 
 =head2 error
 

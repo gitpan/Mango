@@ -124,6 +124,38 @@ Mojo::IOLoop->start;
 like $fail, qr/Oops!/, 'right error';
 is $collection->remove, 1, 'one document removed';
 
+# Fork safety
+$mango      = Mango->new($ENV{TEST_ONLINE});
+$collection = $mango->db->collection('connection_test');
+my ($connections, $current);
+$mango->on(
+  connection => sub {
+    my ($mango, $id) = @_;
+    $connections++;
+    $current = $id;
+  }
+);
+is $collection->find->count, 0, 'no documents';
+is $connections, 1, 'one connection';
+ok $mango->ioloop->stream($current), 'connection exists';
+my $last = $current;
+is $collection->find->count, 0, 'no documents';
+is $connections, 1, 'one connection';
+ok $mango->ioloop->stream($current), 'connection exists';
+is $last, $current, 'same connection';
+{
+  local $$ = -23;
+  is $collection->find->count, 0, 'no documents';
+  is $connections, 2, 'two connections';
+  ok $mango->ioloop->stream($current), 'connection exists';
+  isnt $last, $current, 'different connections';
+  $last = $current;
+  is $collection->find->count, 0, 'no documents';
+  is $connections, 2, 'two connections';
+  ok $mango->ioloop->stream($current), 'connection exists';
+  is $last, $current, 'same connection';
+}
+
 # Mixed parallel operations
 $collection->insert({test => $_}) for 1 .. 3;
 is $mango->backlog, 0, 'no operations waiting';
