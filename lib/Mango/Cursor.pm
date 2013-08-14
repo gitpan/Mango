@@ -162,17 +162,17 @@ sub _dequeue {
 
 sub _enough { $_[0]->_finished ? 1 : !!@{$_[0]{results}} }
 
-sub _finished {
-  my $self = shift;
-  return undef unless my $limit = $self->limit;
-  return ($self->{num} // 0) >= abs($limit) ? 1 : undef;
-}
-
 sub _enqueue {
   my ($self, $reply) = @_;
   return unless $reply;
   push @{$self->{results} ||= []}, @{$reply->{docs}};
   return $self->id($reply->{cursor})->_dequeue;
+}
+
+sub _finished {
+  my $self = shift;
+  return undef unless my $limit = $self->limit;
+  return ($self->{num} // 0) >= abs($limit) ? 1 : undef;
 }
 
 sub _max {
@@ -384,7 +384,7 @@ perform operation non-blocking.
 
 =head2 next
 
-  my $doc  = $cursor->next;
+  my $doc = $cursor->next;
 
 Fetch next document. You can also append a callback to perform operation
 non-blocking.
