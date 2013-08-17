@@ -104,14 +104,14 @@ sub explain {
 
 sub next {
   my ($self, $cb) = @_;
-  return exists $self->{results} ? $self->_continue($cb) : $self->_start($cb);
+  return defined $self->id ? $self->_continue($cb) : $self->_start($cb);
 }
 
 sub rewind {
   my ($self, $cb) = @_;
 
   delete $self->{$_} for qw(num results);
-  return $cb ? $self->_defer($cb) : undef unless my $id = $self->id;
+  return $cb ? $self->_defer($cb) : undef unless defined(my $id = $self->id);
   $self->id(undef);
 
   # Non-blocking
@@ -160,7 +160,7 @@ sub _dequeue {
   return shift @{$self->{results}};
 }
 
-sub _enough { $_[0]->_finished ? 1 : !!@{$_[0]{results}} }
+sub _enough { $_[0]->_finished ? 1 : !!@{$_[0]{results} // []} }
 
 sub _enqueue {
   my ($self, $reply) = @_;
@@ -198,9 +198,7 @@ sub _start {
     if $cb;
 
   # Blocking
-  my $reply = $collection->db->mango->query(@query);
-  $self->id($reply->{cursor}) if $reply;
-  return $self->_enqueue($reply);
+  return $self->_enqueue($collection->db->mango->query(@query));
 }
 
 1;
@@ -399,8 +397,8 @@ non-blocking.
 
   $cursor->rewind;
 
-Rewind cursor. You can also append a callback to perform operation
-non-blocking.
+Rewind cursor and kill it on the server. You can also append a callback to
+perform operation non-blocking.
 
   $cursor->rewind(sub {
     my ($cursor, $err) = @_;
