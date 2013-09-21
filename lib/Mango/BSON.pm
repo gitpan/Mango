@@ -375,8 +375,13 @@ Mango::BSON - BSON
 
   use Mango::BSON ':bson';
 
-  my $bson = bson_encode bson_doc(now => bson_time, counter => 13);
-  my $doc  = bson_decode $bson;
+  my $bson = bson_encode {
+    foo       => 'bar',
+    baz       => 0.42,
+    unordered => {one => [1, 2, 3], two => bson_time},
+    ordered   => bson_doc(one => qr/test/i, two => bson_true)
+  };
+  my $doc = bson_decode $bson;
 
 =head1 DESCRIPTION
 
@@ -429,7 +434,7 @@ Decode BSON into Perl data structures.
 =head2 bson_doc
 
   my $doc = bson_doc;
-  my $doc = bson_doc foo => 'bar', baz => 23;
+  my $doc = bson_doc foo => 'bar', baz => 0.42, yada => {yada => [1, 2, 3]};
 
 Create new BSON document with L<Mango::BSON::Document>, which can also be used
 as a generic ordered hash.
