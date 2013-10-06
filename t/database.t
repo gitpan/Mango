@@ -7,7 +7,7 @@ plan skip_all => 'set TEST_ONLINE to enable this test'
 
 use List::Util 'first';
 use Mango;
-use Mango::BSON 'bson_code';
+use Mango::BSON qw(bson_code bson_dbref);
 use Mojo::IOLoop;
 
 # Run command blocking
@@ -67,6 +67,28 @@ $db->collection_names(
 Mojo::IOLoop->start;
 ok !$fail, 'no error';
 ok first { $_ eq 'database_test' } @$result, 'found collection';
+$collection->drop;
+
+# Dereference blocking
+my $oid = $collection->insert({test => 23});
+is $db->dereference(bson_dbref('database_test', $oid))->{test}, 23,
+  'right result';
+$collection->drop;
+
+# Dereference non-blocking
+$oid = $collection->insert({test => 23});
+($fail, $result) = ();
+$db->dereference(
+  bson_dbref('database_test', $oid) => sub {
+    my ($db, $err, $doc) = @_;
+    $fail   = $err;
+    $result = $doc;
+    Mojo::IOLoop->stop;
+  }
+);
+Mojo::IOLoop->start;
+ok !$fail, 'no error';
+is $result->{test}, 23, 'right result';
 $collection->drop;
 
 # Interrupted blocking command
