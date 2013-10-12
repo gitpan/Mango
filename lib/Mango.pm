@@ -23,7 +23,7 @@ has protocol        => sub { Mango::Protocol->new };
 has w               => 1;
 has wtimeout        => 1000;
 
-our $VERSION = '0.15';
+our $VERSION = '0.16';
 
 # Operations with reply
 for my $name (qw(get_more query)) {
@@ -151,28 +151,26 @@ sub _cleanup {
   $self->_finish(undef, $_->{cb}, 'Premature connection close') for @$queue;
 }
 
-sub _close {
-  my ($self, $id) = @_;
-  $self->_error($id);
-  $self->_connect if delete $self->{connections}{$id};
-}
-
 sub _connect {
-  my $self = shift;
+  my ($self, $hosts) = @_;
+  my ($host, $port) = @{shift @{$hosts ||= [@{$self->hosts}]}};
 
   weaken $self;
-  my ($host, $port) = @{$self->hosts->[0]};
   my $id;
   $id = $self->_loop->client(
-    {address => $host, port => $port // DEFAULT_PORT} => sub {
+    {address => $host, port => $port //= DEFAULT_PORT} => sub {
       my ($loop, $err, $stream) = @_;
 
-      # Connection error
-      return $self->_error($id, $err) if $err;
+      # Connection error (try next server)
+      if ($err) {
+        return $self->_error($id, $err) unless @$hosts;
+        delete $self->{connections}{$id};
+        return $self->_connect($hosts);
+      }
 
       # Connection established
       $stream->timeout(0);
-      $stream->on(close => sub { $self->_close($id) });
+      $stream->on(close => sub { $self->_error($id) });
       $stream->on(error => sub { $self && $self->_error($id, pop) });
       $stream->on(read => sub { $self->_read($id, pop) });
       $self->emit(connection => $id)->_connected($id, [@{$self->credentials}]);
@@ -201,7 +199,8 @@ sub _error {
   my $c    = delete $self->{connections}{$id};
   my $last = $c->{last};
   $last //= shift @{$self->{queue}} if $err;
-  return $err ? $self->emit(error => $err) : undef unless $last;
+  $self->_connect if @{$self->{queue}};
+  return $err ? $self->emit(error => $err) : $self unless $last;
   $self->_finish(undef, $last->{cb}, $err || 'Premature connection close');
 }
 
@@ -465,7 +464,7 @@ Default database, defaults to C<admin>.
   my $hosts = $mango->hosts;
   $mango    = $mango->hosts([['localhost', 3000]]);
 
-Server to connect to, defaults to C<localhost> and port C<27017>.
+Servers to connect to, defaults to C<localhost> and port C<27017>.
 
 =head2 ioloop
 
