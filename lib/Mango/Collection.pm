@@ -9,9 +9,16 @@ has [qw(db name)];
 
 sub aggregate {
   my ($self, $pipeline) = (shift, shift);
-  return $self->_command(
-    bson_doc(aggregate => $self->name, pipeline => $pipeline),
-    'result', @_);
+  my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
+  my $command = bson_doc(aggregate => $self->name, pipeline => $pipeline,
+    %{shift // {}});
+
+  # Blocking
+  return $self->_aggregate($pipeline, $self->db->command($command)) unless $cb;
+
+  # Non-blocking
+  return $self->db->command($command,
+    sub { shift; $self->$cb(shift, $self->_aggregate($pipeline, shift)) });
 }
 
 sub build_index_name { join '_', keys %{$_[1]} }
@@ -117,26 +124,18 @@ sub insert {
 sub map_reduce {
   my ($self, $map, $reduce) = (shift, shift, shift);
   my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
-  my $mr = bson_doc
+  my $command = bson_doc
     mapreduce => $self->name,
     map       => ref $map ? $map : bson_code($map),
     reduce    => ref $reduce ? $reduce : bson_code($reduce),
     %{shift // {}};
 
-  # Non-blocking
-  my $db = $self->db;
-  return $db->command(
-    $mr => sub {
-      my ($db, $err, $doc) = @_;
-      my $result
-        = $doc->{result} ? $db->collection($doc->{result}) : $doc->{results};
-      $self->$cb($err, $result);
-    }
-  ) if $cb;
-
   # Blocking
-  my $doc = $db->command($mr);
-  return $doc->{result} ? $db->collection($doc->{result}) : $doc->{results};
+  return $self->_map_reduce($self->db->command($command)) unless $cb;
+
+  # Non-blocking
+  return $self->db->command(
+    $command => sub { shift; $self->$cb(shift, $self->_map_reduce(shift)) });
 }
 
 sub remove {
@@ -172,6 +171,13 @@ sub update {
   return $self->_handle('update', $flags, $query, $update, @_);
 }
 
+sub _aggregate {
+  my ($self, $pipeline, $doc) = @_;
+  my $out = $pipeline->[-1]{'$out'};
+  return $self->db->collection($out) if defined $out;
+  return $doc->{cursor} ? $self->_cursor($doc) : $doc->{result};
+}
+
 sub _command {
   my ($self, $command, $field, $cb) = @_;
 
@@ -186,6 +192,13 @@ sub _command {
   # Blocking
   my $doc = $self->db->command($command);
   return $field ? $doc->{$field} : $doc;
+}
+
+sub _cursor {
+  my ($self, $doc) = @_;
+  my $cursor = $doc->{cursor};
+  return Mango::Cursor->new(collection => $self, id => $cursor->{id})
+    ->add_batch($cursor->{firstBatch});
 }
 
 sub _handle {
@@ -212,6 +225,12 @@ sub _indexes {
   my $indexes = bson_doc;
   if (my $docs = shift) { $indexes->{delete $_->{name}} = $_ for @$docs }
   return $indexes;
+}
+
+sub _map_reduce {
+  my ($self, $doc) = @_;
+  return $doc->{results} unless $doc->{result};
+  return $self->db->collection($doc->{result});
 }
 
 1;
@@ -261,9 +280,14 @@ the following new ones.
 
   my $docs = $collection->aggregate(
     [{'$group' => {_id => undef, total => {'$sum' => '$foo'}}}]);
+  my $cursor = $collection->aggregate(
+    [{'$match' => {'$gt' => 23}}], {cursor => {}});
+  my $collection = $collection->aggregate(
+    [{'$match' => {'$gt' => 23}}, {'$out' => 'some_collection'}]);
 
-Aggregate collection with aggregation framework. You can also append a
-callback to perform operation non-blocking.
+Aggregate collection with aggregation framework, additional options will be
+passed along to the server verbatim.. You can also append a callback to
+perform operation non-blocking.
 
   my $pipeline = [{'$group' => {_id => undef, total => {'$sum' => '$foo'}}}];
   $collection->aggregate($pipeline => sub {
