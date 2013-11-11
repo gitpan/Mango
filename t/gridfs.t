@@ -143,14 +143,14 @@ $gridfs->$_->drop for qw(files chunks);
 
 # Find and slurp versions blocking
 my $one
-  = $gridfs->writer->chunk_size(1)->filename('test.txt')->write('One')->close;
+  = $gridfs->writer->chunk_size(1)->filename('test.txt')->write('One1')->close;
 my $two = $gridfs->writer->filename('test.txt')->write('Two')->close;
 is_deeply $gridfs->list, ['test.txt'], 'right files';
 is $gridfs->find_version('test.txt', 1), $one, 'right version';
 is $gridfs->find_version('test.txt', 2), $two, 'right version';
 is $gridfs->find_version('test.txt', 3), undef, 'no version';
-is $gridfs->reader->open($one)->slurp, 'One', 'right content';
-is $gridfs->reader->open($one)->seek(1)->slurp, 'ne', 'right content';
+is $gridfs->reader->open($one)->slurp, 'One1', 'right content';
+is $gridfs->reader->open($one)->seek(1)->slurp, 'ne1', 'right content';
 is $gridfs->reader->open($two)->slurp, 'Two', 'right content';
 is $gridfs->reader->open($two)->seek(1)->slurp, 'wo', 'right content';
 $gridfs->$_->drop for qw(files chunks);
@@ -179,20 +179,20 @@ ok !$fail, 'no error';
 is $results[0], $one, 'right version';
 is $results[1], $two, 'right version';
 is $results[2], undef, 'no version';
-my $reader_one = $gridfs->reader;
-my $reader_two = $gridfs->reader;
+my $one_reader = $gridfs->reader;
+my $two_reader = $gridfs->reader;
 ($fail, @results) = ();
 $delay = Mojo::IOLoop->delay(
   sub {
     my $delay = shift;
-    $reader_one->open($one => $delay->begin);
-    $reader_two->open($two => $delay->begin);
+    $one_reader->open($one => $delay->begin);
+    $two_reader->open($two => $delay->begin);
   },
   sub {
     my ($delay, $one_err, $two_err) = @_;
     $fail = $one_err || $two_err;
-    $reader_one->slurp($delay->begin);
-    $reader_two->slurp($delay->begin);
+    $one_reader->slurp($delay->begin);
+    $two_reader->slurp($delay->begin);
   },
   sub {
     my ($delay, $one_err, $one, $two_err, $two) = @_;
@@ -238,6 +238,33 @@ Mojo::IOLoop->start;
 ok !$fail, 'no error';
 is $result, $oid, 'right result';
 ok $writer->is_closed, 'file is still closed';
+$gridfs->$_->drop for qw(files chunks);
+
+# Big chunks and parallel readers
+$oid = $gridfs->writer->write('x' x 1000000)->close;
+($fail, @results) = ();
+$delay = Mojo::IOLoop->delay(
+  sub {
+    my $delay = shift;
+    $gridfs->reader->open($oid => $delay->begin(0));
+    $gridfs->reader->open($oid => $delay->begin(0));
+  },
+  sub {
+    my ($delay, $reader1, $err1, $reader2, $err2) = @_;
+    $fail = $err1 || $err2;
+    $reader1->slurp($delay->begin);
+    $reader2->slurp($delay->begin);
+  },
+  sub {
+    my ($delay, $err1, $data1, $err2, $data2) = @_;
+    $fail ||= $err2 || $err2;
+    @results = ($data1, $data2);
+  }
+);
+$delay->wait;
+ok !$fail, 'no error';
+is $results[0], 'x' x 1000000, 'right content';
+is $results[1], 'x' x 1000000, 'right content';
 $gridfs->$_->drop for qw(files chunks);
 
 # Missing file

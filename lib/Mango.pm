@@ -7,7 +7,7 @@ use Mango::Database;
 use Mango::Protocol;
 use Mojo::IOLoop;
 use Mojo::URL;
-use Mojo::Util qw(md5_sum monkey_patch);
+use Mojo::Util qw(dumper md5_sum monkey_patch);
 use Scalar::Util 'weaken';
 
 use constant DEBUG => $ENV{MANGO_DEBUG} || 0;
@@ -23,7 +23,7 @@ has protocol        => sub { Mango::Protocol->new };
 has w               => 1;
 has wtimeout        => 1000;
 
-our $VERSION = '0.17';
+our $VERSION = '0.18';
 
 # Operations with reply
 for my $name (qw(get_more query)) {
@@ -31,7 +31,6 @@ for my $name (qw(get_more query)) {
     my $self = shift;
     my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
     my ($next, $msg) = $self->_build($name, @_);
-    warn "-- Operation $next ($name)\n" if DEBUG;
     $self->_start({id => $next, safe => 1, msg => $msg, cb => $cb});
   };
 }
@@ -39,22 +38,20 @@ for my $name (qw(get_more query)) {
 # Operations followed by getLastError
 for my $name (qw(delete insert update)) {
   monkey_patch __PACKAGE__, $name, sub {
-    my ($self, $ns) = (shift, shift);
+    my ($self, $namespace) = (shift, shift);
     my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
 
     # Make sure both operations can be written together
-    my ($next, $msg) = $self->_build($name, $ns, @_);
-    $next = $self->_id;
-    $ns =~ s/\..+$/\.\$cmd/;
+    my ($next, $msg) = $self->_build($name, $namespace, @_);
+    $namespace =~ s/\..+$/\.\$cmd/;
     my $gle = bson_doc
       getLastError => 1,
       j            => $self->j ? bson_true : bson_false,
       w            => $self->w,
       wtimeout     => $self->wtimeout;
-    $msg .= $self->protocol->build_query($next, $ns, {}, 0, -1, $gle, {});
+    ($next, $gle) = $self->_build('query', $namespace, {}, 0, -1, $gle, {});
 
-    warn "-- Operation $next ($name)\n" if DEBUG;
-    $self->_start({id => $next, safe => 1, msg => $msg, cb => $cb});
+    $self->_start({id => $next, safe => 1, msg => "$msg$gle", cb => $cb});
   };
 }
 
@@ -105,7 +102,6 @@ sub kill_cursors {
   my $self = shift;
   my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
   my ($next, $msg) = $self->_build('kill_cursors', @_);
-  warn "-- Unsafe operation $next (kill_cursors)\n" if DEBUG;
   $self->_start({id => $next, safe => 0, msg => $msg, cb => $cb});
 }
 
@@ -131,7 +127,8 @@ sub _auth {
 
 sub _build {
   my ($self, $name) = (shift, shift);
-  my $next   = $self->_id;
+  my $next = $self->_id;
+  warn "-- Operation #$next ($name)\n@{[dumper [@_]]}" if DEBUG;
   my $method = "build_$name";
   return ($next, $self->protocol->$method($next, @_));
 }
@@ -216,12 +213,10 @@ sub _fast {
   };
 
   # Skip the queue and run command right away
-  my $next = $self->_id;
-  my $msg
-    = $protocol->build_query($next, "$db.\$cmd", {}, 0, -1, $command, {});
+  my ($next, $msg)
+    = $self->_build('query', "$db.\$cmd", {}, 0, -1, $command, {});
   $self->{connections}{$id}{fast}
     = {id => $next, safe => 1, msg => $msg, cb => $wrapper};
-  warn "-- Fast operation $next (query)\n" if DEBUG;
   $self->_next;
 }
 
@@ -249,10 +244,10 @@ sub _next {
 sub _read {
   my ($self, $id, $chunk) = @_;
 
-  $self->{buffer} .= $chunk;
   my $c = $self->{connections}{$id};
-  while (my $reply = $self->protocol->parse_reply(\$self->{buffer})) {
-    warn "-- Client <<< Server ($reply->{to})\n" if DEBUG;
+  $c->{buffer} .= $chunk;
+  while (my $reply = $self->protocol->parse_reply(\$c->{buffer})) {
+    warn "-- Client <<< Server (#$reply->{to})\n@{[dumper $reply]}" if DEBUG;
     next unless $reply->{to} == $c->{last}{id};
     $self->_finish($reply, (delete $c->{last})->{cb});
   }
@@ -316,7 +311,7 @@ sub _write {
 
   delete $c->{start} unless my $last = delete $c->{fast};
   return $c->{start} unless $c->{last} = $last ||= shift @{$self->{queue}};
-  warn "-- Client >>> Server ($last->{id})\n" if DEBUG;
+  warn "-- Client >>> Server (#$last->{id})\n" if DEBUG;
   $stream->write(delete $last->{msg});
 
   # Unsafe operations are done when they are written
@@ -535,18 +530,18 @@ Number of queued operations that have not yet been assigned to a connection.
   my $db = $mango->db;
   my $db = $mango->db('test');
 
-Get L<Mango::Database> object for database, uses C<default_db> if no name is
-provided. Note that the reference L<Mango::Database/"mango"> is weakened, so
-the L<Mango> object needs to be referenced elsewhere as well.
+Get L<Mango::Database> object for database, uses L</"default_db"> if no name
+is provided. Note that the reference L<Mango::Database/"mango"> is weakened,
+so the L<Mango> object needs to be referenced elsewhere as well.
 
 =head2 delete
 
-  my $reply = $mango->delete($name, $flags, $query);
+  my $reply = $mango->delete($namespace, $flags, $query);
 
 Perform low level C<delete> operation followed by C<getLastError> command. You
 can also append a callback to perform operation non-blocking.
 
-  $mango->delete(($name, $flags, $query) => sub {
+  $mango->delete(($namespace, $flags, $query) => sub {
     my ($mango, $err, $reply) = @_;
     ...
   });
@@ -554,12 +549,12 @@ can also append a callback to perform operation non-blocking.
 
 =head2 get_more
 
-  my $reply = $mango->get_more($name, $return, $cursor);
+  my $reply = $mango->get_more($namespace, $return, $cursor);
 
 Perform low level C<get_more> operation. You can also append a callback to
 perform operation non-blocking.
 
-  $mango->get_more(($name, $return, $cursor) => sub {
+  $mango->get_more(($namespace, $return, $cursor) => sub {
     my ($mango, $err, $reply) = @_;
     ...
   });
@@ -567,12 +562,12 @@ perform operation non-blocking.
 
 =head2 insert
 
-  my $reply = $mango->insert($name, $flags, @docs);
+  my $reply = $mango->insert($namespace, $flags, @docs);
 
 Perform low level C<insert> operation followed by C<getLastError> command. You
 can also append a callback to perform operation non-blocking.
 
-  $mango->insert(($name, $flags, @docs) => sub {
+  $mango->insert(($namespace, $flags, @docs) => sub {
     my ($mango, $err, $reply) = @_;
     ...
   });
@@ -593,12 +588,13 @@ perform operation non-blocking.
 
 =head2 query
 
-  my $reply = $mango->query($name, $flags, $skip, $return, $query, $fields);
+  my $reply = $mango->query(
+    $namespace, $flags, $skip, $return, $query, $fields);
 
 Perform low level C<query> operation. You can also append a callback to
 perform operation non-blocking.
 
-  $mango->query(($name, $flags, $skip, $return, $query, $fields) => sub {
+  $mango->query(($namespace, $flags, $skip, $return, $query, $fields) => sub {
     my ($mango, $err, $reply) = @_;
     ...
   });
@@ -606,12 +602,12 @@ perform operation non-blocking.
 
 =head2 update
 
-  my $reply = $mango->update($name, $flags, $query, $update);
+  my $reply = $mango->update($namespace, $flags, $query, $update);
 
 Perform low level C<update> operation followed by C<getLastError> command. You
 can also append a callback to perform operation non-blocking.
 
-  $mango->update(($name, $flags, $query, $update) => sub {
+  $mango->update(($namespace, $flags, $query, $update) => sub {
     my ($mango, $err, $reply) = @_;
     ...
   });
