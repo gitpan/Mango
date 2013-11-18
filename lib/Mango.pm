@@ -23,7 +23,7 @@ has protocol        => sub { Mango::Protocol->new };
 has w               => 1;
 has wtimeout        => 1000;
 
-our $VERSION = '0.18';
+our $VERSION = '0.19';
 
 # Operations with reply
 for my $name (qw(get_more query)) {
@@ -378,6 +378,16 @@ Mango - Pure-Perl non-blocking I/O MongoDB driver
   }
   $delay->wait unless Mojo::IOLoop->is_running;
 
+  # Event loops such as AnyEvent are supported through EV
+  use EV;
+  use AnyEvent;
+  my $cv = AE::cv;
+  $mango->db('test')->command(buildInfo => sub {
+    my ($db, $err, $doc) = @_;
+    $cv->send($doc->{version});
+  });
+  say $cv->recv;
+
 =head1 DESCRIPTION
 
 L<Mango> is a pure-Perl non-blocking I/O MongoDB driver, optimized for use
@@ -386,7 +396,8 @@ support. Since MongoDB is still changing rapidly, only the latest stable
 version is supported.
 
 To learn more about MongoDB you should take a look at the
-L<official documentation|http://docs.mongodb.org>.
+L<official documentation|http://docs.mongodb.org>, the documentation included
+in this distribution is no replacement for it.
 
 Note that this whole distribution is EXPERIMENTAL and will change without
 warning!
