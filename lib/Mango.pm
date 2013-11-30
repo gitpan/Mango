@@ -23,7 +23,7 @@ has protocol        => sub { Mango::Protocol->new };
 has w               => 1;
 has wtimeout        => 1000;
 
-our $VERSION = '0.19';
+our $VERSION = '0.20';
 
 # Operations with reply
 for my $name (qw(get_more query)) {
@@ -57,11 +57,23 @@ for my $name (qw(delete insert update)) {
 
 sub DESTROY { shift->_cleanup }
 
-sub new {
-  my $self = shift->SUPER::new;
+sub new { shift->SUPER::new->from_string(@_) }
+
+sub backlog { scalar @{shift->{queue} || []} }
+
+sub db {
+  my ($self, $name) = @_;
+  $name //= $self->default_db;
+  my $db = Mango::Database->new(mango => $self, name => $name);
+  weaken $db->{mango};
+  return $db;
+}
+
+sub from_string {
+  my ($self, $str) = @_;
 
   # Protocol
-  return $self unless my $str = shift;
+  return $self unless $str;
   my $url = Mojo::URL->new($str);
   croak qq{Invalid MongoDB connection string "$str"}
     unless $url->protocol eq 'mongodb';
@@ -86,16 +98,6 @@ sub new {
   if (my $timeout = $query->param('wtimeoutMS')) { $self->wtimeout($timeout) }
 
   return $self;
-}
-
-sub backlog { scalar @{shift->{queue} || []} }
-
-sub db {
-  my ($self, $name) = @_;
-  $name //= $self->default_db;
-  my $db = Mango::Database->new(mango => $self, name => $name);
-  weaken $db->{mango};
-  return $db;
 }
 
 sub kill_cursors {
@@ -332,10 +334,10 @@ Mango - Pure-Perl non-blocking I/O MongoDB driver
 =head1 SYNOPSIS
 
   use Mango;
-  my $mango = Mango->new('mongodb://localhost:27017');
 
   # Insert document
-  my $oid = $mango->db('test')->collection('foo')->insert({bar => 'baz'});
+  my $mango = Mango->new('mongodb://localhost:27017');
+  my $oid   = $mango->db('test')->collection('foo')->insert({bar => 'baz'});
 
   # Find document
   my $doc = $mango->db('test')->collection('foo')->find_one({bar => 'baz'});
@@ -558,6 +560,13 @@ can also append a callback to perform operation non-blocking.
   });
   Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
 
+=head2 from_string
+
+  $mango
+    = $mango->from_string('mongodb://sri:s3cret@localhost:3000/test?w=2');
+
+Parse configuration from connection string.
+
 =head2 get_more
 
   my $reply = $mango->get_more($namespace, $return, $cursor);
@@ -599,8 +608,8 @@ perform operation non-blocking.
 
 =head2 query
 
-  my $reply = $mango->query(
-    $namespace, $flags, $skip, $return, $query, $fields);
+  my $reply
+    = $mango->query($namespace, $flags, $skip, $return, $query, $fields);
 
 Perform low level C<query> operation. You can also append a callback to
 perform operation non-blocking.

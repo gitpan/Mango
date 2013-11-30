@@ -1,4 +1,7 @@
 
+0.20  2013-11-30
+  - Added from_string method to Mango.
+
 0.19  2013-11-18
   - Improved Mango::Cursor to allow $query key in queries.
 
