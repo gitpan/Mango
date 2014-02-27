@@ -68,18 +68,24 @@ is_deeply $cursor->build_query(1),
   'right query';
 is_deeply $cursor->query, {'$query' => {foo => 'bar'}, '$foo' => 'bar'},
   'query has not changed';
+$cursor = $collection->find({})->comment('Test!')->timeout(500);
+is_deeply $cursor->build_query,
+  {'$query' => {}, '$comment' => 'Test!', '$maxTimeMS' => 500}, 'right query';
 
 # Clone cursor
 $cursor
-  = $collection->find({test => {'$exists' => 1}})->batch_size(2)->limit(3)
-  ->skip(1)->sort({test => 1})->fields({test => 1})->max_scan(100);
+  = $collection->find({test => {'$exists' => 1}})->batch_size(2)
+  ->comment('Test')->limit(3)->skip(1)->sort({test => 1})->fields({test => 1})
+  ->max_scan(100);
 my $doc = $cursor->next;
 ok defined $cursor->id, 'has a cursor id';
 ok $doc->{test}, 'right document';
-my $clone = $cursor->snapshot(1)->hint({test => 1})->tailable(1)->clone;
+my $clone
+  = $cursor->snapshot(1)->hint({test => 1})->timeout(500)->tailable(1)->clone;
 isnt $cursor, $clone, 'different objects';
 ok !defined $clone->id, 'has no cursor id';
-is $clone->batch_size, 2, 'right batch size';
+is $clone->batch_size, 2,      'right batch size';
+is $clone->comment,    'Test', 'right comment';
 is_deeply $clone->fields, {test => 1}, 'right fields';
 is_deeply $clone->hint,   {test => 1}, 'right hint value';
 is $clone->limit, 3, 'right limit';
@@ -87,6 +93,7 @@ is_deeply $clone->query, {test => {'$exists' => 1}}, 'right query';
 is $clone->skip,     1,   'right skip value';
 is $clone->snapshot, 1,   'right snapshot value';
 is $clone->max_scan, 100, 'right max_scan value';
+is $clone->timeout,  500, 'right timeout value';
 is $clone->tailable, 1,   'is tailable';
 is_deeply $clone->sort, {test => 1}, 'right sort value';
 $cursor = $collection->find({foo => 'bar'}, {foo => 1});
@@ -150,13 +157,13 @@ my $delay = Mojo::IOLoop->delay(
   },
   sub {
     my ($delay, $err, $count) = @_;
-    $fail = $err;
+    return $delay->pass($err) if $err;
     push @results, $count;
     $collection->find({foo => 'bar'})->count($delay->begin);
   },
   sub {
     my ($delay, $err, $count) = @_;
-    $fail ||= $err;
+    $fail = $err;
     push @results, $count;
   }
 );
@@ -175,19 +182,19 @@ $delay  = Mojo::IOLoop->delay(
   },
   sub {
     my ($delay, $err, $doc) = @_;
+    return $delay->pass($err) if $err;
+    push @docs, $doc;
+    $cursor->next($delay->begin);
+  },
+  sub {
+    my ($delay, $err, $doc) = @_;
+    return $delay->pass($err) if $err;
+    push @docs, $doc;
+    $cursor->next($delay->begin);
+  },
+  sub {
+    my ($delay, $err, $doc) = @_;
     $fail = $err;
-    push @docs, $doc;
-    $cursor->next($delay->begin);
-  },
-  sub {
-    my ($delay, $err, $doc) = @_;
-    $fail ||= $err;
-    push @docs, $doc;
-    $cursor->next($delay->begin);
-  },
-  sub {
-    my ($delay, $err, $doc) = @_;
-    $fail ||= $err;
     push @docs, $doc;
   }
 );
@@ -237,18 +244,18 @@ $delay  = Mojo::IOLoop->delay(
   },
   sub {
     my ($delay, $err, $doc) = @_;
-    $fail = $err;
+    return $delay->pass($err) if $err;
     push @docs, $doc;
     $cursor->rewind($delay->begin);
   },
   sub {
     my ($delay, $err) = @_;
-    $fail ||= $err;
+    return $delay->pass($err) if $err;
     $cursor->next($delay->begin);
   },
   sub {
     my ($delay, $err, $doc) = @_;
-    $fail ||= $err;
+    $fail = $err;
     push @docs, $doc;
   }
 );

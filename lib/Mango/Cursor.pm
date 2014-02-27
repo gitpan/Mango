@@ -5,7 +5,7 @@ use Mango::BSON 'bson_doc';
 use Mojo::IOLoop;
 
 has [qw(batch_size limit skip)] => 0;
-has [qw(collection hint id max_scan snapshot sort tailable)];
+has [qw(collection comment hint id max_scan snapshot sort tailable timeout)];
 has [qw(fields query)] => sub { {} };
 
 sub add_batch {
@@ -29,29 +29,26 @@ sub all {
 sub build_query {
   my ($self, $explain) = @_;
 
-  my $query    = $self->query;
-  my $hint     = $self->hint;
-  my $max_scan = $self->max_scan;
-  my $snapshot = $self->snapshot;
-  my $sort     = $self->sort;
+  my %ext;
+  if (my $comment = $self->comment) { $ext{'$comment'} = $comment }
+  if ($explain) { $ext{'$explain'} = 1 }
+  if (my $hint     = $self->hint)     { $ext{'$hint'}      = $hint }
+  if (my $max_scan = $self->max_scan) { $ext{'$maxScan'}   = $max_scan }
+  if (my $snapshot = $self->snapshot) { $ext{'$snapshot'}  = 1 }
+  if (my $sort     = $self->sort)     { $ext{'$orderby'}   = $sort }
+  if (my $timeout  = $self->timeout)  { $ext{'$maxTimeMS'} = $timeout }
 
-  return $query unless $explain || $hint || $max_scan || $snapshot || $sort;
-
-  $query = bson_doc $query->{'$query'} ? %$query : ('$query' => $query);
-  $query->{'$explain'}  = 1         if $explain;
-  $query->{'$hint'}     = $hint     if $hint;
-  $query->{'$maxScan'}  = $max_scan if $max_scan;
-  $query->{'$snapshot'} = 1         if $snapshot;
-  $query->{'$orderby'}  = $sort     if $sort;
-
-  return $query;
+  my $query = $self->query;
+  return $query unless keys %ext;
+  return bson_doc $query->{'$query'} ? %$query : ('$query' => $query), %ext;
 }
 
 sub clone {
   my $self  = shift;
   my $clone = $self->new;
-  $clone->$_($self->$_) for qw(batch_size collection fields hint limit);
-  $clone->$_($self->$_) for qw(max_scan query skip snapshot sort tailable);
+  $clone->$_($self->$_)
+    for qw(batch_size collection comment fields hint limit max_scan);
+  $clone->$_($self->$_) for qw(query skip snapshot sort tailable timeout);
   return $clone;
 }
 
@@ -156,7 +153,7 @@ sub _continue {
 
 sub _defer {
   my ($self, $cb, @args) = @_;
-  Mojo::IOLoop->timer(0 => sub { $self->$cb(@args) });
+  Mojo::IOLoop->next_tick(sub { $self->$cb(@args) });
 }
 
 sub _dequeue {
@@ -247,6 +244,13 @@ Number of documents to fetch in one batch, defaults to C<0>.
 
 L<Mango::Collection> object this cursor belongs to.
 
+=head2 comment
+
+  my $comment = $cursor->comment;
+  $cursor     = $cursor->comment('Fun query!');
+
+A comment to identify query.
+
 =head2 fields
 
   my $fields = $cursor->fields;
@@ -317,6 +321,13 @@ Sort documents, the order of keys matters.
   $cursor      = $cursor->tailable(1);
 
 Tailable cursor.
+
+=head2 timeout
+
+  my $timeout = $cursor->timeout;
+  $cursor     = $cursor->timeout(500);
+
+Timeout for query in milliseconds.
 
 =head1 METHODS
 

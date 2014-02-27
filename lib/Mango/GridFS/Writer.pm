@@ -16,7 +16,7 @@ sub close {
   if ($self->{closed}++) {
     my $files_id = $self->{files_id};
     return $files_id unless $cb;
-    return Mojo::IOLoop->timer(0 => sub { $self->$cb(undef, $files_id) });
+    return Mojo::IOLoop->next_tick(sub { $self->$cb(undef, $files_id) });
   }
 
   my @index   = (bson_doc(files_id => 1, n => 1), {unique => bson_true});
@@ -39,18 +39,18 @@ sub close {
     sub { $self->_chunk(shift->begin) },
     sub {
       my ($delay, $err) = @_;
-      return $self->$cb($err) if $err;
+      return $delay->pass($err) if $err;
       $files->ensure_index({filename => 1} => $delay->begin);
       $gridfs->chunks->ensure_index(@index => $delay->begin);
     },
     sub {
       my ($delay, $files_err, $chunks_err) = @_;
-      if (my $err = $files_err || $chunks_err) { return $self->$cb($err) }
+      if (my $err = $files_err || $chunks_err) { return $delay->pass($err) }
       $gridfs->db->command($command => $delay->begin);
     },
     sub {
       my ($delay, $err, $doc) = @_;
-      return $self->$cb($err) if $err;
+      return $delay->pass($err) if $err;
       $files->insert($self->_meta($doc->{md5}) => $delay->begin);
     },
     sub { shift; $self->$cb(shift, $self->{files_id}) }
@@ -65,7 +65,7 @@ sub write {
   # Already closed
   if ($self->is_closed) {
     croak 'File already closed' unless $cb;
-    return Mojo::IOLoop->timer(0 => sub { $self->$cb('File already closed') });
+    return Mojo::IOLoop->next_tick(sub { $self->$cb('File already closed') });
   }
 
   $self->{buffer} .= $chunk;
@@ -76,7 +76,7 @@ sub write {
   if ($cb) {
     my $delay = Mojo::IOLoop->delay(sub { shift; $self->_err($cb, @_) });
     $self->_chunk($delay->begin) while length $self->{buffer} >= $size;
-    $delay->begin->(undef, undef);
+    $delay->pass;
   }
 
   # Blocking
@@ -89,7 +89,7 @@ sub _chunk {
   my ($self, $cb) = @_;
 
   my $chunk = substr $self->{buffer}, 0, $self->chunk_size, '';
-  return $cb ? Mojo::IOLoop->timer(0 => $cb) : () unless length $chunk;
+  return $cb ? Mojo::IOLoop->next_tick($cb) : () unless length $chunk;
 
   # Blocking
   my $n   = $self->{n}++;

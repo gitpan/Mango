@@ -3,15 +3,15 @@ abstract: 'Pure-Perl non-blocking I/O MongoDB driver'
 author:
   - 'Sebastian Riedel <sri@cpan.org>'
 build_requires:
-  ExtUtils::MakeMaker: 0
+  ExtUtils::MakeMaker: '0'
 configure_requires:
-  ExtUtils::MakeMaker: 0
+  ExtUtils::MakeMaker: '0'
 dynamic_config: 1
-generated_by: 'ExtUtils::MakeMaker version 6.86, CPAN::Meta::Converter version 2.133380'
+generated_by: 'ExtUtils::MakeMaker version 6.9, CPAN::Meta::Converter version 2.133380'
 license: artistic_2
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
-  version: 1.4
+  version: '1.4'
 name: Mango
 no_index:
   directory:
@@ -19,12 +19,12 @@ no_index:
     - inc
     - t
 requires:
-  Mojolicious: 4.56
-  perl: 5.010001
+  Mojolicious: '4.85'
+  perl: '5.010001'
 resources:
   MailingList: http://groups.google.com/group/mojolicious
   bugtracker: http://github.com/kraih/mango/issues
   homepage: http://mojolicio.us
   license: http://www.opensource.org/licenses/artistic-license-2.0
   repository: http://github.com/kraih/mango
-version: 0.23
+version: '0.24'

@@ -78,31 +78,31 @@ my $delay = Mojo::IOLoop->delay(
   },
   sub {
     my ($delay, $err, $oid) = @_;
-    $fail    = $err;
+    return $delay->pass($err) if $err;
     $created = $oid;
     $collection->find_one({foo => 'bar'} => $delay->begin);
   },
   sub {
     my ($delay, $err, $doc) = @_;
-    $fail ||= $err;
+    return $delay->pass($err) if $err;
     $doc->{foo} = 'yada';
     $collection->update(({foo => 'bar'}, $doc) => $delay->begin);
   },
   sub {
     my ($delay, $err, $doc) = @_;
-    $fail ||= $err;
+    return $delay->pass($err) if $err;
     $updated = $doc;
     $collection->find_one($created => $delay->begin);
   },
   sub {
     my ($delay, $err, $doc) = @_;
-    $fail ||= $err;
+    return $delay->pass($err) if $err;
     $found = $doc;
     $collection->remove($delay->begin);
   },
   sub {
     my ($delay, $err, $doc) = @_;
-    $fail ||= $err;
+    $fail    = $err;
     $removed = $doc;
   }
 );
@@ -160,7 +160,7 @@ is $last, $current, 'same connection';
   is $last, $current, 'same connection';
 }
 
-# Mixed parallel operations
+# Mixed concurrent operations
 $collection->insert({test => $_}) for 1 .. 3;
 is $mango->backlog, 0, 'no operations waiting';
 $delay = Mojo::IOLoop->delay;
