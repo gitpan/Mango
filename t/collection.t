@@ -139,9 +139,10 @@ is $result, undef, 'collection does not exist';
 
 # Aggregate collection blocking
 $collection->insert([{more => 1}, {more => 2}, {more => 3}]);
-my $docs = $collection->aggregate(
+my $cursor = $collection->aggregate(
   [{'$group' => {_id => undef, total => {'$sum' => '$more'}}}]);
-is $docs->[0]{total}, 6, 'right result';
+ok !$cursor->id, 'no cursor id';
+is $cursor->next->{total}, 6, 'right result';
 is $collection->remove({more => {'$exists' => 1}})->{n}, 3,
   'three documents removed';
 
@@ -150,79 +151,72 @@ $collection->insert([{more => 1}, {more => 2}, {more => 3}]);
 ($fail, $result) = ();
 $collection->aggregate(
   [{'$group' => {_id => undef, total => {'$sum' => '$more'}}}] => sub {
-    my ($collection, $err, $docs) = @_;
+    my ($collection, $err, $cursor) = @_;
     $fail   = $err;
-    $result = $docs;
+    $result = $cursor;
     Mojo::IOLoop->stop;
   }
 );
 Mojo::IOLoop->start;
 ok !$fail, 'no error';
-is $result->[0]{total}, 6, 'right result';
+is $result->next->{total}, 6, 'right result';
 is $collection->remove({more => {'$exists' => 1}})->{n}, 3,
   'three documents removed';
 
-# Aggregate with cursors and collections
-SKIP: {
-  my $version = $mango->db->command('buildInfo')->{versionArray};
-  skip 'MongoDB 2.5 required!', 11 unless join('.', @$version[0, 1]) >= '2.5';
+# Explain aggregation
+$collection->insert({stuff => $_}) for 1 .. 30;
+$doc = $collection->aggregate([{'$match' => {stuff => {'$gt' => 0}}}],
+  {explain => \1});
+ok $doc->{stages}, 'right result';
+is $collection->remove->{n}, 30, 'thirty documents removed';
 
-  # Aggregate with cursor
-  $collection->insert({stuff => $_}) for 1 .. 30;
-  my $cursor = $collection->aggregate([{'$match' => {stuff => {'$gt' => 0}}}],
-    {cursor => {}});
-  ok !$cursor->id, 'no cursor id';
-  is scalar @{$cursor->all}, 30, 'thirty documents found';
-  is $collection->remove->{n}, 30, 'thirty documents removed';
+# Aggregate with collections
+$collection->insert({stuff => $_}) for 1 .. 30;
+my $out = $collection->aggregate(
+  [
+    {'$match' => {stuff => {'$gt' => 0}}},
+    {'$out'   => 'collection_test_results'}
+  ]
+);
+is $out->name, 'collection_test_results', 'right name';
+is $out->find->count, 30, 'thirty documents found';
+$out->drop;
+is $collection->remove->{n}, 30, 'thirty documents removed';
 
-  # Aggregate with collections
-  $collection->insert({stuff => $_}) for 1 .. 30;
-  my $out = $collection->aggregate(
-    [
-      {'$match' => {stuff => {'$gt' => 0}}},
-      {'$out'   => 'collection_test_results'}
-    ]
-  );
-  is $out->name, 'collection_test_results', 'right name';
-  is $out->find->count, 30, 'thirty documents found';
-  $out->drop;
-  is $collection->remove->{n}, 30, 'thirty documents removed';
+# Aggregate with cursor blocking (multiple batches)
+$collection->insert({stuff => $_}) for 1 .. 30;
+$cursor = $collection->aggregate([{'$match' => {stuff => {'$gt' => 0}}}],
+  {cursor => {batchSize => 5}});
+ok $cursor->id, 'cursor has id';
+is scalar @{$cursor->all}, 30, 'thirty documents found';
+is $collection->remove->{n}, 30, 'thirty documents removed';
 
-  # Aggregate with cursor blocking (multiple batches)
-  $collection->insert({stuff => $_}) for 1 .. 30;
-  $cursor = $collection->aggregate([{'$match' => {stuff => {'$gt' => 0}}}],
-    {cursor => {batchSize => 5}});
-  ok $cursor->id, 'cursor has id';
-  is scalar @{$cursor->all}, 30, 'thirty documents found';
-  is $collection->remove->{n}, 30, 'thirty documents removed';
-
-  # Aggregate with cursor non-blocking (multiple batches)
-  $collection->insert({stuff => $_}) for 1 .. 30;
-  ($fail, $result) = ();
-  my $delay = Mojo::IOLoop->delay(
-    sub {
-      my $delay = shift;
-      $collection->aggregate(
-        [{'$match' => {stuff => {'$gt' => 0}}}],
-        {cursor => {batchSize => 5}},
-        $delay->begin
-      );
-    },
-    sub {
-      my ($delay, $err, $cursor) = @_;
-      return $delay->pass($err) if $err;
-      $cursor->all($delay->begin);
-    },
-    sub {
-      my ($delay, $err, $docs) = @_;
-      $fail   = $err;
-      $result = $docs;
-    }
-  );
-  $delay->wait;
-  is scalar @$result, 30, 'thirty documents found';
-  is $collection->remove->{n}, 30, 'thirty documents removed';
-}
+# Aggregate with cursor non-blocking (multiple batches)
+$collection->insert({stuff => $_}) for 1 .. 30;
+($fail, $result) = ();
+my $delay = Mojo::IOLoop->delay(
+  sub {
+    my $delay = shift;
+    $collection->aggregate(
+      [{'$match' => {stuff => {'$gt' => 0}}}],
+      {cursor => {batchSize => 5}},
+      $delay->begin
+    );
+  },
+  sub {
+    my ($delay, $err, $cursor) = @_;
+    return $delay->pass($err) if $err;
+    $cursor->all($delay->begin);
+  },
+  sub {
+    my ($delay, $err, $docs) = @_;
+    $fail   = $err;
+    $result = $docs;
+  }
+);
+$delay->wait;
+is scalar @$result, 30, 'thirty documents found';
+is $collection->remove->{n}, 30, 'thirty documents removed';
 
 # Save document blocking
 $oid = $collection->save({update => 'me'});
@@ -312,9 +306,7 @@ ok !$collection->find_one($oid), 'no document';
 
 # Ensure and drop index blocking
 $collection->insert({test => 23, foo => 'bar'});
-$collection->insert({test => 23, foo => 'baz'});
-is $collection->find->count, 2, 'two documents';
-$collection->ensure_index({test => 1}, {unique => \1, dropDups => \1});
+$collection->ensure_index({test => 1}, {unique => \1});
 is $collection->find->count, 1, 'one document';
 is $collection->index_information->{test}{unique}, bson_true,
   'index is unique';
@@ -324,14 +316,11 @@ $collection->drop;
 
 # Ensure and drop index non-blocking
 $collection->insert({test => 23, foo => 'bar'});
-$collection->insert({test => 23, foo => 'baz'});
-is $collection->find->count, 2, 'two documents';
 ($fail, $result) = ();
-my $delay = Mojo::IOLoop->delay(
+$delay = Mojo::IOLoop->delay(
   sub {
     my $delay = shift;
-    $collection->ensure_index(
-      ({test => 1}, {unique => \1, dropDups => \1}) => $delay->begin);
+    $collection->ensure_index(({test => 1}, {unique => \1}) => $delay->begin);
   },
   sub {
     my ($delay, $err) = @_;
@@ -416,10 +405,10 @@ $collection->insert({x => 1, tags => [qw(dog cat)]});
 $collection->insert({x => 2, tags => ['cat']});
 $collection->insert({x => 3, tags => [qw(mouse cat dog)]});
 $collection->insert({x => 4, tags => []});
-my $out
+$out
   = $collection->map_reduce($map, $reduce, {out => 'collection_test_results'});
 $collection->drop;
-$docs = $out->find->sort({value => -1})->all;
+my $docs = $out->find->sort({value => -1})->all;
 is_deeply $docs->[0], {_id => 'cat',   value => 3}, 'right document';
 is_deeply $docs->[1], {_id => 'dog',   value => 2}, 'right document';
 is_deeply $docs->[2], {_id => 'mouse', value => 1}, 'right document';
@@ -480,6 +469,48 @@ $collection->drop;
 is_deeply $result->[0], {_id => 'cat',   value => 3}, 'right document';
 is_deeply $result->[1], {_id => 'dog',   value => 2}, 'right document';
 is_deeply $result->[2], {_id => 'mouse', value => 1}, 'right document';
+
+# Insert same document twice blocking
+$doc = bson_doc _id => bson_oid, foo => 'bar';
+$collection->insert($doc);
+eval { $collection->insert($doc) };
+like $@, qr/^Write error at index 0: .+/, 'right error';
+$collection->drop;
+
+# Insert same document twice non-blocking
+$doc = bson_doc _id => bson_oid, foo => 'bar';
+$collection->insert($doc);
+$fail = undef;
+$collection->insert(
+  $doc => sub {
+    my ($collection, $err) = @_;
+    $fail = $err;
+    Mojo::IOLoop->stop;
+  }
+);
+Mojo::IOLoop->start;
+like $fail, qr/^Write error at index 0: .+/, 'right error';
+
+# Insert same document twice blocking (upsert)
+$doc = bson_doc _id => bson_oid, foo => 'bar';
+$collection->insert($doc);
+eval { $collection->update({foo => 'baz'}, $doc, {upsert => 1}) };
+like $@, qr/^Write error at index 0: .+/, 'right error';
+$collection->drop;
+
+# Insert same document twice non-blocking (upsert)
+$doc = bson_doc _id => bson_oid, foo => 'bar';
+$collection->insert($doc);
+$fail = undef;
+$collection->update(
+  {foo => 'baz'} => $doc => {upsert => 1} => sub {
+    my ($collection, $err) = @_;
+    $fail = $err;
+    Mojo::IOLoop->stop;
+  }
+);
+Mojo::IOLoop->start;
+like $fail, qr/^Write error at index 0: .+/, 'right error';
 
 # Interrupted non-blocking remove
 my $port = Mojo::IOLoop->generate_port;

@@ -8,6 +8,15 @@ use Mango::GridFS;
 
 has [qw(mango name)];
 
+sub build_write_concern {
+  my $mango = shift->mango;
+  return {
+    j => $mango->j ? \1 : \0,
+    w => $mango->w,
+    wtimeout => $mango->wtimeout
+  };
+}
+
 sub collection {
   my ($self, $name) = @_;
   return Mango::Collection->new(db => $self, name => $name);
@@ -38,19 +47,21 @@ sub command {
   $command = ref $command ? $command : bson_doc($command => 1, @_);
 
   # Non-blocking
-  my $collection = $self->collection('$cmd');
-  my $protocol   = $self->mango->protocol;
-  return $collection->find_one(
-    $command => sub {
-      my ($collection, $err, $doc) = @_;
-      $err ||= $protocol->command_error({docs => [$doc]});
-      $self->$cb($err, $doc // {});
+  my $mango    = $self->mango;
+  my $name     = $self->name;
+  my $protocol = $mango->protocol;
+  return $mango->query(
+    ("$name.\$cmd", {}, 0, -1, $command, {}) => sub {
+      my ($collection, $err, $reply) = @_;
+      my $doc = $reply->{docs}[0];
+      $err ||= $protocol->command_error($doc);
+      $self->$cb($err, $doc);
     }
   ) if $cb;
 
   # Blocking
-  my $doc = $collection->find_one($command);
-  if (my $err = $protocol->command_error({docs => [$doc]})) { croak $err }
+  my $doc = $mango->query("$name.\$cmd", {}, 0, -1, $command, {})->{docs}[0];
+  if (my $err = $protocol->command_error($doc)) { croak $err }
   return $doc;
 }
 
@@ -113,6 +124,12 @@ Name of this database.
 
 L<Mango::Database> inherits all methods from L<Mojo::Base> and implements the
 following new ones.
+
+=head2 build_write_concern
+
+  my $concern = $db->build_write_concern;
+
+Build write concern based on l</"mango"> settings.
 
 =head2 collection
 

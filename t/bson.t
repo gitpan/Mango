@@ -11,7 +11,7 @@ use Mojo::Base -strict;
 use Test::More;
 use Mango::BSON ':bson';
 use Mojo::ByteStream 'b';
-use Mojo::JSON 'j';
+use Mojo::JSON 'encode_json';
 
 # Ordered document
 my $doc = bson_doc(a => 1, c => 2, b => 3);
@@ -274,6 +274,13 @@ is_deeply $doc, {foo => bson_bin('12345')->type('user_defined')},
   'right document';
 is bson_encode($doc), $bytes, 'successful roundtrip';
 
+# Embedded BSON roundtrip
+my $raw = bson_raw bson_encode {bar => 'baz'};
+is_deeply bson_decode(bson_encode {foo => $raw}), {foo => {bar => 'baz'}},
+  'successful roundtrip';
+is_deeply bson_decode(bson_encode {foo => [$raw]}), {foo => [{bar => 'baz'}]},
+  'successful roundtrip';
+
 # DBRef roundtrip
 $bytes
   = "\x31\x00\x00\x00\x03\x64\x62\x72\x65\x66\x00\x25\x00\x00\x00\x07\x24\x69"
@@ -362,15 +369,16 @@ is_deeply bson_decode(bson_encode {test => [-sin(9**9**9)]}),
   {test => [-sin(9**9**9)]}, 'successful roundtrip';
 
 # Time to JSON
-is j({time => bson_time(1360626536748)}), '{"time":1360626536748}',
+is encode_json({time => bson_time(1360626536748)}), '{"time":1360626536748}',
   'right JSON';
 
 # Binary to JSON
-is j({bin => bson_bin('Hello World!')}), '{"bin":"SGVsbG8gV29ybGQh"}',
-  'right JSON';
+is encode_json({bin => bson_bin('Hello World!')}),
+  '{"bin":"SGVsbG8gV29ybGQh"}', 'right JSON';
 
 # DBRef to JSON
-is j({dbref => bson_dbref('test', bson_oid('525139d85867b45714020000'))}),
+is encode_json(
+  {dbref => bson_dbref('test', bson_oid('525139d85867b45714020000'))}),
   '{"dbref":{"$ref":"test","$id":"525139d85867b45714020000"}}', 'right JSON';
 
 # Validate object id

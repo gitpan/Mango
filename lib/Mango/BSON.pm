@@ -16,13 +16,10 @@ use Scalar::Util 'blessed';
 
 my @BSON = (
   qw(bson_bin bson_code bson_dbref bson_decode bson_doc bson_encode),
-  qw(bson_false bson_length bson_max bson_min bson_oid bson_time bson_true),
-  qw(bson_ts)
+  qw(bson_false bson_length bson_max bson_min bson_oid bson_raw bson_time),
+  qw(bson_true bson_ts)
 );
-our @EXPORT_OK = (
-  @BSON,
-  qw(decode_int32 decode_int64 encode_cstring encode_int32 encode_int64),
-);
+our @EXPORT_OK = (@BSON, 'encode_cstring');
 our %EXPORT_TAGS = (bson => \@BSON);
 
 # Types
@@ -86,24 +83,24 @@ sub bson_doc {
 sub bson_encode {
   my $doc = shift;
 
-  my $bson = '';
-  while (my ($key, $value) = each %$doc) {
-    $bson .= _encode_value(encode_cstring($key), $value);
-  }
+  my $bson = join '',
+    map { _encode_value(encode_cstring($_), $doc->{$_}) } keys %$doc;
 
   # Document ends with null byte
-  return encode_int32(length($bson) + 5) . $bson . "\x00";
+  return pack('l<', length($bson) + 5) . $bson . "\x00";
 }
 
 sub bson_false {$FALSE}
 
-sub bson_length { length $_[0] < 4 ? undef : decode_int32(substr $_[0], 0, 4) }
+sub bson_length { length $_[0] < 4 ? undef : unpack 'l<', substr($_[0], 0, 4) }
 
 sub bson_max {$MAXKEY}
 
 sub bson_min {$MINKEY}
 
 sub bson_oid { Mango::BSON::ObjectID->new(@_) }
+
+sub bson_raw { bless \(my $dummy = shift), 'Mango::BSON::_Raw' }
 
 sub bson_time { Mango::BSON::Time->new(@_) }
 
@@ -113,22 +110,16 @@ sub bson_ts {
 
 sub bson_true {$TRUE}
 
-sub decode_int32 { unpack 'l<', shift }
-sub decode_int64 { unpack 'q<', shift }
-
 sub encode_cstring {
   my $str = shift;
   utf8::encode $str;
   return pack 'Z*', $str;
 }
 
-sub encode_int32 { pack 'l<', shift }
-sub encode_int64 { pack 'q<', shift }
-
 sub _decode_binary {
   my $bsonref = shift;
 
-  my $len = decode_int32(substr $$bsonref, 0, 4, '');
+  my $len = unpack 'l<', substr($$bsonref, 0, 4, '');
   my $subtype = substr $$bsonref, 0, 1, '';
   my $binary = substr $$bsonref, 0, $len, '';
 
@@ -142,9 +133,9 @@ sub _decode_binary {
 
 sub _decode_cstring {
   my $bsonref = shift;
-  $$bsonref =~ s/^([^\x00]*)\x00//;
-  my $str = $1;
+  my $str = substr $$bsonref, 0, index($$bsonref, "\x00"), '';
   utf8::decode $str;
+  substr $$bsonref, 0, 1, '';
   return $str;
 }
 
@@ -169,10 +160,10 @@ sub _decode_doc {
 sub _decode_string {
   my $bsonref = shift;
 
-  my $len = decode_int32(substr $$bsonref, 0, 4, '');
-  substr $$bsonref, $len - 1, 1, '';
+  my $len = unpack 'l<', substr($$bsonref, 0, 4, '');
   my $str = substr $$bsonref, 0, $len - 1, '';
   utf8::decode $str;
+  substr $$bsonref, 0, 1, '';
 
   return $str;
 }
@@ -189,8 +180,8 @@ sub _decode_value {
 
   # Double/Int32/Int64
   return unpack 'd<', substr $$bsonref, 0, 8, '' if $type eq DOUBLE;
-  return decode_int32(substr $$bsonref, 0, 4, '') if $type eq INT32;
-  return decode_int64(substr $$bsonref, 0, 8, '') if $type eq INT64;
+  return unpack 'l<', substr($$bsonref, 0, 4, '') if $type eq INT32;
+  return unpack 'q<', substr($$bsonref, 0, 8, '') if $type eq INT64;
 
   # Document
   return _decode_doc($bsonref) if $type eq DOCUMENT;
@@ -204,7 +195,7 @@ sub _decode_value {
   return undef if $type eq NULL;
 
   # Time
-  return bson_time(decode_int64(substr $$bsonref, 0, 8, ''))
+  return bson_time(unpack 'q<', substr($$bsonref, 0, 8, ''))
     if $type eq DATETIME;
 
   # Regex
@@ -222,13 +213,13 @@ sub _decode_value {
   # Code (with and without scope)
   return bson_code(_decode_string($bsonref)) if $type eq CODE;
   if ($type eq CODE_SCOPE) {
-    decode_int32(substr $$bsonref, 0, 4, '');
+    substr $$bsonref, 0, 4, '';
     return bson_code(_decode_string($bsonref))->scope(_decode_doc($bsonref));
   }
 
   # Timestamp
   return bson_ts(
-    reverse map({decode_int32(substr $$_, 0, 4, '')} $bsonref, $bsonref))
+    reverse map({unpack 'l<', substr($$_, 0, 4, '')} $bsonref, $bsonref))
     if $type eq TIMESTAMP;
 
   # Unknown
@@ -237,7 +228,7 @@ sub _decode_value {
 
 sub _encode_binary {
   my ($e, $subtype, $value) = @_;
-  return BINARY . $e . encode_int32(length $value) . $subtype . $value;
+  return BINARY . $e . pack('l<', length $value) . $subtype . $value;
 }
 
 sub _encode_object {
@@ -251,7 +242,7 @@ sub _encode_object {
   return BOOL . $e . ($value ? "\x01" : "\x00") if $class eq $BOOL;
 
   # Time
-  return DATETIME . $e . encode_int64($value) if $class eq 'Mango::BSON::Time';
+  return DATETIME . $e . pack('q<', $value) if $class eq 'Mango::BSON::Time';
 
   # Regex
   if ($class eq 'Regexp') {
@@ -277,7 +268,7 @@ sub _encode_object {
     # With scope
     if (my $scope = $value->scope) {
       my $code = _encode_string($value->code) . bson_encode($scope);
-      return CODE_SCOPE . $e . encode_int32(length $code) . $code;
+      return CODE_SCOPE . $e . pack('l<', length $code) . $code;
     }
 
     # Without scope
@@ -285,7 +276,7 @@ sub _encode_object {
   }
 
   # Timestamp
-  return join '', TIMESTAMP, $e, map { encode_int32 $_} $value->increment,
+  return join '', TIMESTAMP, $e, map { pack 'l<', $_ } $value->increment,
     $value->seconds
     if $class eq 'Mango::BSON::Timestamp';
 
@@ -301,7 +292,7 @@ sub _encode_object {
 sub _encode_string {
   my $str = shift;
   utf8::encode $str;
-  return encode_int32(length($str) + 1) . "$str\x00";
+  return pack('l<', length($str) + 1) . "$str\x00";
 }
 
 sub _encode_value {
@@ -312,6 +303,9 @@ sub _encode_value {
 
   # Blessed
   if (my $class = blessed $value) {
+
+    # Embedded BSON
+    return DOCUMENT . $e . $$value if $class eq 'Mango::BSON::_Raw';
 
     # Max
     return MAX_KEY . $e if $value eq $MAXKEY;
@@ -331,10 +325,8 @@ sub _encode_value {
 
     # Array
     if ($ref eq 'ARRAY') {
-      my $array = bson_doc();
-      my $i     = 0;
-      $array->{$i++} = $_ for @$value;
-      return ARRAY . $e . bson_encode($array);
+      my $i = 0;
+      return ARRAY . $e . bson_encode(bson_doc(map { $i++ => $_ } @$value));
     }
 
     # Scalar (boolean shortcut)
@@ -348,16 +340,19 @@ sub _encode_value {
   if ($flags & B::SVp_IOK) {
 
     # Int32
-    return INT32 . $e . encode_int32($value)
+    return INT32 . $e . pack('l<', $value)
       if $value <= INT32_MAX && $value >= INT32_MIN;
 
     # Int64
-    return INT64 . $e . encode_int64($value);
+    return INT64 . $e . pack('q<', $value);
   }
 
   # String
   return STRING . $e . _encode_string("$value");
 }
+
+# Pre-encoded BSON
+package Mango::BSON::_Raw;
 
 # Constants
 package Mango::BSON::_MaxKey;
@@ -389,10 +384,10 @@ Mango::BSON - BSON
 L<Mango::BSON> is a minimalistic implementation of L<http://bsonspec.org>.
 
 In addition to a bunch of custom BSON data types it supports normal Perl data
-types like C<Scalar>, C<Regexp>, C<undef>, C<Array> reference, C<Hash>
+types like scalar, regular expression, C<undef>, array reference, hash
 reference and will try to call the C<TO_JSON> method on blessed references, or
-stringify them if it doesn't exist. C<Scalar> references will be used to
-generate booleans, based on if their values are true or false.
+stringify them if it doesn't exist. Scalar references will be used to generate
+booleans, based on if their values are true or false.
 
 =head1 FUNCTIONS
 
@@ -429,7 +424,7 @@ Create new BSON element of the code type with L<Mango::BSON::Code>.
 
 =head2 bson_dbref
 
-  my $dbref = bson_dbref('test', $oid);
+  my $dbref = bson_dbref 'test', $oid;
 
 Create a new database reference.
 
@@ -495,6 +490,16 @@ defaults to generating a new unique object id.
   # Generate object id with specific epoch time
   my $oid = bson_oid->from_epoch(1359840145);
 
+=head2 bson_raw
+
+  my $raw = bson_raw $bson;
+
+Pre-encoded BSON document.
+
+  # Embed pre-encoded BSON document
+  my $first  = bson_encode {foo => 'bar'};
+  my $second = bson_encode {test => bson_raw $first};
+
 =head2 bson_time
 
   my $now  = bson_time;
@@ -515,35 +520,11 @@ Create new BSON element of the boolean type true.
 
 Create new BSON element of the timestamp type with L<Mango::BSON::Timestamp>.
 
-=head2 decode_int32
-
-  my $int32 = decode_int32 $bytes;
-
-Decode 32bit integer.
-
-=head2 decode_int64
-
-  my $int64 = decode_int64 $bytes;
-
-Decode 64bit integer.
-
 =head2 encode_cstring
 
   my $bytes = encode_cstring $cstring;
 
 Encode cstring.
-
-=head2 encode_int32
-
-  my $bytes = encode_int32 $int32;
-
-Encode 32bit integer.
-
-=head2 encode_int64
-
-  my $bytes = encode_int64 $int64;
-
-Encode 64bit integer.
 
 =head1 SEE ALSO
 

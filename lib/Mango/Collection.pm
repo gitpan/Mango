@@ -2,7 +2,8 @@ package Mango::Collection;
 use Mojo::Base -base;
 
 use Carp 'croak';
-use Mango::BSON qw(bson_code bson_doc bson_oid bson_true);
+use Mango::BSON qw(bson_code bson_doc bson_oid);
+use Mango::Bulk;
 use Mango::Cursor;
 
 has [qw(db name)];
@@ -10,32 +11,35 @@ has [qw(db name)];
 sub aggregate {
   my ($self, $pipeline) = (shift, shift);
   my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
+
   my $command = bson_doc(aggregate => $self->name, pipeline => $pipeline,
     %{shift // {}});
+  $command->{cursor} //= {} unless $command->{explain};
 
   # Blocking
-  return $self->_aggregate($pipeline, $self->db->command($command)) unless $cb;
+  return $self->_aggregate($command, $self->db->command($command)) unless $cb;
 
   # Non-blocking
   return $self->db->command($command,
-    sub { shift; $self->$cb(shift, $self->_aggregate($pipeline, shift)) });
+    sub { shift; $self->$cb(shift, $self->_aggregate($command, shift)) });
 }
 
 sub build_index_name { join '_', keys %{$_[1]} }
 
+sub bulk { Mango::Bulk->new(collection => shift) }
+
 sub create {
   my $self = shift;
   my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
-  return $self->_command(bson_doc(create => $self->name, %{shift // {}}),
-    undef, $cb);
+  return $self->_command(bson_doc(create => $self->name, %{shift // {}}), $cb);
 }
 
-sub drop { $_[0]->_command(bson_doc(drop => $_[0]->name), undef, $_[1]) }
+sub drop { $_[0]->_command(bson_doc(drop => $_[0]->name), $_[1]) }
 
 sub drop_index {
   my ($self, $name) = (shift, shift);
   return $self->_command(bson_doc(dropIndexes => $self->name, index => $name),
-    undef, @_);
+    shift);
 }
 
 sub ensure_index {
@@ -44,15 +48,15 @@ sub ensure_index {
   my $doc = shift // {};
 
   $doc->{name} //= $self->build_index_name($spec);
-  $doc->{ns}  = $self->full_name;
   $doc->{key} = $spec;
 
   # Non-blocking
-  my $collection = $self->db->collection('system.indexes');
-  return $collection->insert($doc => sub { shift; $self->$cb(shift) }) if $cb;
+  my $command = bson_doc createIndexes => $self->name, indexes => [$doc];
+  return $self->db->command($command => sub { shift; $self->$cb(shift) })
+    if $cb;
 
   # Blocking
-  $collection->insert($doc);
+  $self->db->command($command);
 }
 
 sub find {
@@ -66,7 +70,7 @@ sub find {
 sub find_and_modify {
   my ($self, $opts) = (shift, shift);
   return $self->_command(bson_doc(findAndModify => $self->name, %$opts),
-    'value', @_);
+    shift, sub { shift->{value} });
 }
 
 sub find_one {
@@ -104,21 +108,13 @@ sub insert {
 
   # Make sure all documents have ids
   my @ids = map { $_->{_id} //= bson_oid } @$docs;
+  my $command = bson_doc
+    insert       => $self->name,
+    documents    => $docs,
+    ordered      => \1,
+    writeConcern => $self->db->build_write_concern;
 
-  # Non-blocking
-  my $mango = $self->db->mango;
-  return $mango->insert(
-    ($self->full_name, {}, @$docs) => sub {
-      my ($mango, $err, $reply) = @_;
-      $err ||= $mango->protocol->command_error($reply);
-      $self->$cb($err, @ids > 1 ? \@ids : $ids[0]);
-    }
-  ) if $cb;
-
-  # Blocking
-  my $reply = $mango->insert($self->full_name, {}, @$docs);
-  if (my $err = $mango->protocol->command_error($reply)) { croak $err }
-  return @ids > 1 ? \@ids : $ids[0];
+  return $self->_command($command, $cb, sub { @ids > 1 ? \@ids : $ids[0] });
 }
 
 sub map_reduce {
@@ -152,10 +148,17 @@ sub options {
 
 sub remove {
   my $self  = shift;
-  my $query = ref $_[0] eq 'CODE' ? {} : shift // {};
-  my $flags = ref $_[0] eq 'CODE' ? {} : shift // {};
-  $flags->{single_remove} = 1 if delete $flags->{single};
-  return $self->_handle('delete', $flags, $query, @_);
+  my $cb    = ref $_[-1] eq 'CODE' ? pop : undef;
+  my $query = shift // {};
+  my $flags = shift // {};
+
+  my $command = bson_doc
+    delete       => $self->name,
+    deletes      => [{q => $query, limit => $flags->{single} ? 1 : 0}],
+    ordered      => \1,
+    writeConcern => $self->db->build_write_concern;
+
+  return $self->_command($command, $cb);
 }
 
 sub save {
@@ -174,63 +177,63 @@ sub save {
   return $doc->{_id};
 }
 
-sub stats { $_[0]->_command(bson_doc(collstats => $_[0]->name), undef, $_[1]) }
+sub stats { $_[0]->_command(bson_doc(collstats => $_[0]->name), $_[1]) }
 
 sub update {
   my ($self, $query, $update) = (shift, shift, shift);
-  my $flags = ref $_[0] eq 'CODE' ? {} : shift // {};
-  $flags->{multi_update} = 1 if delete $flags->{multi};
-  return $self->_handle('update', $flags, $query, $update, @_);
+  my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
+  my $flags = shift // {};
+
+  $update = {
+    q      => $query,
+    u      => $update,
+    upsert => $flags->{upsert} ? \1 : \0,
+    multi  => $flags->{multi} ? \1 : \0
+  };
+  my $command = bson_doc
+    update       => $self->name,
+    updates      => [$update],
+    ordered      => \1,
+    writeConcern => $self->db->build_write_concern;
+
+  return $self->_command($command, $cb);
 }
 
 sub _aggregate {
-  my ($self, $pipeline, $doc) = @_;
-  my $out = $pipeline->[-1]{'$out'};
+  my ($self, $command, $doc) = @_;
+
+  # Document (explain)
+  return $doc if $command->{explain};
+
+  # Collection
+  my $out = $command->{pipeline}[-1]{'$out'};
   return $self->db->collection($out) if defined $out;
-  return $doc->{cursor} ? $self->_cursor($doc) : $doc->{result};
-}
 
-sub _command {
-  my ($self, $command, $field, $cb) = @_;
-
-  # Non-blocking
-  return $self->db->command(
-    $command => sub {
-      my ($db, $err, $doc) = @_;
-      $self->$cb($err, $field ? $doc->{$field} : $doc);
-    }
-  ) if $cb;
-
-  # Blocking
-  my $doc = $self->db->command($command);
-  return $field ? $doc->{$field} : $doc;
-}
-
-sub _cursor {
-  my ($self, $doc) = @_;
+  # Cursor
   my $cursor = $doc->{cursor};
   return Mango::Cursor->new(collection => $self, id => $cursor->{id})
     ->add_batch($cursor->{firstBatch});
 }
 
-sub _handle {
-  my ($self, $method) = (shift, shift);
-  my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
+sub _command {
+  my ($self, $command, $cb, $return) = @_;
+  $return ||= sub {shift};
 
   # Non-blocking
-  my $mango = $self->db->mango;
-  return $mango->$method(
-    ($self->full_name, @_) => sub {
-      my ($mango, $err, $reply) = @_;
-      $err ||= $mango->protocol->command_error($reply);
-      $self->$cb($err, $reply->{docs}[0]);
+  my $db       = $self->db;
+  my $protocol = $db->mango->protocol;
+  return $db->command(
+    $command => sub {
+      my ($self, $err, $doc) = @_;
+      $err ||= $protocol->write_error($doc);
+      $self->$cb($err, $return->($doc));
     }
   ) if $cb;
 
   # Blocking
-  my $reply = $mango->$method($self->full_name, @_);
-  if (my $err = $mango->protocol->command_error($reply)) { croak $err }
-  return $reply->{docs}[0];
+  my $doc = $db->command($command);
+  if (my $err = $protocol->write_error($doc)) { croak $err }
+  return $return->($doc);
 }
 
 sub _indexes {
@@ -290,20 +293,20 @@ the following new ones.
 
 =head2 aggregate
 
-  my $docs = $collection->aggregate(
-    [{'$group' => {_id => undef, total => {'$sum' => '$foo'}}}]);
   my $cursor = $collection->aggregate(
-    [{'$match' => {'$gt' => 23}}], {cursor => {}});
+    [{'$group' => {_id => undef, total => {'$sum' => '$foo'}}}]);
   my $collection = $collection->aggregate(
     [{'$match' => {'$gt' => 23}}, {'$out' => 'some_collection'}]);
+  my $doc = $collection->aggregate(
+    [{'$match' => {'$gt' => 23}}], {explain => bson_true});
 
 Aggregate collection with aggregation framework, additional options will be
-passed along to the server verbatim.. You can also append a callback to
-perform operation non-blocking.
+passed along to the server verbatim. You can also append a callback to perform
+operation non-blocking.
 
   my $pipeline = [{'$group' => {_id => undef, total => {'$sum' => '$foo'}}}];
   $collection->aggregate($pipeline => sub {
-    my ($collection, $err, $docs) = @_;
+    my ($collection, $err, $cursor) = @_;
     ...
   });
   Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
@@ -315,6 +318,18 @@ perform operation non-blocking.
 
 Build name for index specification, the order of keys matters for compound
 indexes.
+
+=head2 bulk
+
+  my $bulk = $collection->bulk;
+
+Build L<Mango::Bulk> object.
+
+  my $bulk = $collection->bulk;
+  $bulk->insert({foo => $_}) for 1 .. 10;
+  $bulk->find({foo => 4})->update_one({'$set' => {bar => 'baz'}});
+  $bulk->find({foo => 7})->remove_one;
+  my $results = $bulk->execute;
 
 =head2 create
 
@@ -447,7 +462,7 @@ to perform operation non-blocking.
 
 =head2 map_reduce
 
-  my $foo  = $collection->map_reduce($map, $reduce, {out => 'foo'});
+  my $collection = $collection->map_reduce($map, $reduce, {out => 'foo'});
   my $docs = $collection->map_reduce($map, $reduce, {out => {inline => 1}});
   my $docs = $collection->map_reduce(
     bson_code($map), bson_code($reduce), {out => {inline => 1}});

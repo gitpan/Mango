@@ -2,7 +2,7 @@ package Mango;
 use Mojo::Base 'Mojo::EventEmitter';
 
 use Carp 'croak';
-use Mango::BSON qw(bson_doc bson_false bson_true);
+use Mango::BSON 'bson_doc';
 use Mango::Database;
 use Mango::Protocol;
 use Mojo::IOLoop;
@@ -18,12 +18,13 @@ has default_db  => 'admin';
 has hosts       => sub { [['localhost']] };
 has ioloop      => sub { Mojo::IOLoop->new };
 has j           => 0;
+has max_bson_size   => 16777216;
 has max_connections => 5;
-has protocol        => sub { Mango::Protocol->new };
-has w               => 1;
-has wtimeout        => 1000;
+has [qw(max_write_batch_size wtimeout)] => 1000;
+has protocol => sub { Mango::Protocol->new };
+has w => 1;
 
-our $VERSION = '0.24';
+our $VERSION = '0.30';
 
 # Operations with reply
 for my $name (qw(get_more query)) {
@@ -32,26 +33,6 @@ for my $name (qw(get_more query)) {
     my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
     my ($next, $msg) = $self->_build($name, @_);
     $self->_start({id => $next, safe => 1, msg => $msg, cb => $cb});
-  };
-}
-
-# Operations followed by getLastError
-for my $name (qw(delete insert update)) {
-  monkey_patch __PACKAGE__, $name, sub {
-    my ($self, $namespace) = (shift, shift);
-    my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
-
-    # Make sure both operations can be written together
-    my ($next, $msg) = $self->_build($name, $namespace, @_);
-    $namespace =~ s/\..+$/\.\$cmd/;
-    my $gle = bson_doc
-      getLastError => 1,
-      j            => $self->j ? bson_true : bson_false,
-      w            => $self->w,
-      wtimeout     => $self->wtimeout;
-    ($next, $gle) = $self->_build('query', $namespace, {}, 0, -1, $gle, {});
-
-    $self->_start({id => $next, safe => 1, msg => "$msg$gle", cb => $cb});
   };
 }
 
@@ -115,16 +96,16 @@ sub _active {
 }
 
 sub _auth {
-  my ($self, $id, $credentials, $auth, $err, $reply) = @_;
+  my ($self, $id, $credentials, $auth, $err, $doc) = @_;
   my ($db, $user, $pass) = @$auth;
 
   # Run "authenticate" command with "nonce" value
-  my $nonce = $reply->{docs}[0]{nonce} // '';
+  my $nonce = $doc->{nonce} // '';
   my $key = md5_sum $nonce . $user . md5_sum "$user:mongo:$pass";
-  my $authenticate
+  my $command
     = bson_doc(authenticate => 1, user => $user, nonce => $nonce, key => $key);
   my $cb = sub { shift->_connected($id, $credentials) };
-  $self->_fast($id, $db, $authenticate, $cb);
+  $self->_fast($id, $db, $command, $cb);
 }
 
 sub _build {
@@ -146,7 +127,8 @@ sub _cleanup {
 
   # Clean up active operations
   my $queue = delete $self->{queue} || [];
-  $_->{last} and unshift @$queue, $_->{last} for values %$connections;
+  $_->{last} && !$_->{start} && unshift @$queue, $_->{last}
+    for values %$connections;
   $self->_finish(undef, $_->{cb}, 'Premature connection close') for @$queue;
 }
 
@@ -184,11 +166,13 @@ sub _connect {
 sub _connected {
   my ($self, $id, $credentials) = @_;
 
-  # No authentication
-  return $self->_next unless my $auth = shift @$credentials;
+  # No authentication (check version with "isMaster" command)
+  my $cb = sub { shift->_version($id, @_) };
+  return $self->_fast($id, $self->default_db, {isMaster => 1}, $cb)
+    unless my $auth = shift @$credentials;
 
   # Run "getnonce" command followed by "authenticate"
-  my $cb = sub { shift->_auth($id, $credentials, $auth, @_) };
+  $cb = sub { shift->_auth($id, $credentials, $auth, @_) };
   $self->_fast($id, $auth->[0], {getnonce => 1}, $cb);
 }
 
@@ -210,8 +194,9 @@ sub _fast {
   my $protocol = $self->protocol;
   my $wrapper  = sub {
     my ($self, $err, $reply) = @_;
-    $err ||= $protocol->command_error($reply);
-    return $err ? $self->_error($id, $err) : $self->$cb($err, $reply);
+    my $doc = $reply->{docs}[0];
+    $err ||= $protocol->command_error($doc);
+    return $err ? $self->_error($id, $err) : $self->$cb($err, $doc);
   };
 
   # Skip the queue and run command right away
@@ -296,6 +281,12 @@ sub _start {
   croak $err if $err;
 
   return $reply;
+}
+
+sub _version {
+  my ($self, $id, $err, $doc) = @_;
+  return $self->_next if ($doc->{maxWireVersion} || 0) >= 2;
+  $self->_error($id, 'MongoDB wire protocol version 2 required');
 }
 
 sub _write {
@@ -406,8 +397,7 @@ warning!
 
 Most of the API is not changing much anymore, but you should wait for a stable
 1.0 release before using any of the modules in this distribution in a
-production environment. Unsafe operations are not supported, so far this is
-considered a feature.
+production environment.
 
 Many arguments passed to methods as well as values of attributes get
 serialized to BSON with L<Mango::BSON>, which provides many helper functions
@@ -416,10 +406,10 @@ All connections will be reset automatically if a new process has been forked,
 this allows multiple processes to share the same L<Mango> object safely.
 
 For better scalability (epoll, kqueue) and to provide IPv6 as well as TLS
-support, the optional modules L<EV> (4.0+), L<IO::Socket::IP> (0.16+) and
-L<IO::Socket::SSL> (1.75+) will be used automatically by L<Mojo::IOLoop> if
+support, the optional modules L<EV> (4.0+), L<IO::Socket::IP> (0.20+) and
+L<IO::Socket::SSL> (1.84+) will be used automatically by L<Mojo::IOLoop> if
 they are installed. Individual features can also be disabled with the
-MOJO_NO_IPV6 and MOJO_NO_TLS environment variables.
+C<MOJO_NO_IPV6> and C<MOJO_NO_TLS> environment variables.
 
 =head1 EVENTS
 
@@ -489,6 +479,13 @@ L<Mojo::IOLoop> object.
 
 Wait for all operations to have reached the journal, defaults to C<0>.
 
+=head2 max_bson_size
+
+  my $max = $mango->max_bson_size;
+  $mango  = $mango->max_bson_size(16777216);
+
+Maximum size for BSON documents in bytes, defaults to C<16777216>.
+
 =head2 max_connections
 
   my $max = $mango->max_connections;
@@ -496,6 +493,13 @@ Wait for all operations to have reached the journal, defaults to C<0>.
 
 Maximum number of connections to use for non-blocking operations, defaults to
 C<5>.
+
+=head2 max_write_batch_size
+
+  my $max = $mango->max_write_batch_size;
+  $mango  = $mango->max_write_batch_size(1000);
+
+ Maximum number of write operations to batch together, defaults to C<1000>.
 
 =head2 protocol
 
@@ -540,19 +544,6 @@ Build L<Mango::Database> object for database, uses L</"default_db"> if no name
 is provided. Note that the reference L<Mango::Database/"mango"> is weakened,
 so the L<Mango> object needs to be referenced elsewhere as well.
 
-=head2 delete
-
-  my $reply = $mango->delete($namespace, $flags, $query);
-
-Perform low level C<delete> operation followed by C<getLastError> command. You
-can also append a callback to perform operation non-blocking.
-
-  $mango->delete(($namespace, $flags, $query) => sub {
-    my ($mango, $err, $reply) = @_;
-    ...
-  });
-  Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
-
 =head2 from_string
 
   $mango
@@ -568,19 +559,6 @@ Perform low level C<get_more> operation. You can also append a callback to
 perform operation non-blocking.
 
   $mango->get_more(($namespace, $return, $cursor) => sub {
-    my ($mango, $err, $reply) = @_;
-    ...
-  });
-  Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
-
-=head2 insert
-
-  my $reply = $mango->insert($namespace, $flags, @docs);
-
-Perform low level C<insert> operation followed by C<getLastError> command. You
-can also append a callback to perform operation non-blocking.
-
-  $mango->insert(($namespace, $flags, @docs) => sub {
     my ($mango, $err, $reply) = @_;
     ...
   });
@@ -621,19 +599,6 @@ perform operation non-blocking.
   });
   Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
 
-=head2 update
-
-  my $reply = $mango->update($namespace, $flags, $query, $update);
-
-Perform low level C<update> operation followed by C<getLastError> command. You
-can also append a callback to perform operation non-blocking.
-
-  $mango->update(($namespace, $flags, $query, $update) => sub {
-    my ($mango, $err, $reply) = @_;
-    ...
-  });
-  Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
-
 =head1 DEBUGGING
 
 You can set the C<MANGO_DEBUG> environment variable to get some advanced
@@ -669,6 +634,7 @@ the terms of the Artistic License version 2.0.
 
 =head1 SEE ALSO
 
-L<Mojolicious::Guides>, L<http://mojolicio.us>.
+L<https://github.com/kraih/mango>, L<Mojolicious::Guides>,
+L<http://mojolicio.us>.
 
 =cut

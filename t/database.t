@@ -28,6 +28,12 @@ Mojo::IOLoop->start;
 ok !$fail, 'no error';
 ok $result, 'command was successful';
 
+# Write concern
+my $mango2  = Mango->new->w(2)->wtimeout(5000);
+my $concern = $mango2->db('test')->build_write_concern;
+is $concern->{w},        2,    'right w value';
+is $concern->{wtimeout}, 5000, 'right wtimeout value';
+
 # Get database statistics blocking
 ok exists $db->stats->{objects}, 'has objects';
 
@@ -101,18 +107,16 @@ $mango->ioloop->remove($id);
 $port  = Mojo::IOLoop->generate_port;
 $mango = Mango->new("mongodb://localhost:$port");
 $id    = Mojo::IOLoop->server((port => $port) => sub { $_[1]->close });
-($fail, $result) = ();
+$fail  = undef;
 $mango->db->command(
   'getnonce' => sub {
-    my ($db, $err, $doc) = @_;
-    $fail   = $err;
-    $result = $doc;
+    my ($db, $err) = @_;
+    $fail = $err;
     Mojo::IOLoop->stop;
   }
 );
 Mojo::IOLoop->start;
 Mojo::IOLoop->remove($id);
 like $fail, qr/Premature connection close/, 'right error';
-is_deeply $result, {}, 'command was not successful';
 
 done_testing();

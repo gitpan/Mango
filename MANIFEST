@@ -8,6 +8,7 @@ lib/Mango/BSON/Document.pm
 lib/Mango/BSON/ObjectID.pm
 lib/Mango/BSON/Time.pm
 lib/Mango/BSON/Timestamp.pm
+lib/Mango/Bulk.pm
 lib/Mango/Collection.pm
 lib/Mango/Cursor.pm
 lib/Mango/Database.pm
@@ -21,6 +22,7 @@ MANIFEST			This list of files
 MANIFEST.SKIP
 README.md
 t/bson.t
+t/bulk.t
 t/collection.t
 t/connection.t
 t/cursor.t

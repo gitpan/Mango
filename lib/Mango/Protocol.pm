@@ -1,77 +1,33 @@
 package Mango::Protocol;
 use Mojo::Base -base;
 
-use Mango::BSON qw(bson_decode bson_encode bson_length decode_int32),
-  qw(decode_int64 encode_cstring encode_int32 encode_int64);
+use Mango::BSON qw(bson_decode bson_encode bson_length encode_cstring);
 
 # Opcodes
-use constant {
-  REPLY        => 1,
-  UPDATE       => 2001,
-  INSERT       => 2002,
-  QUERY        => 2004,
-  GET_MORE     => 2005,
-  DELETE       => 2006,
-  KILL_CURSORS => 2007
-};
-
-sub build_delete {
-  my ($self, $id, $name, $flags, $query) = @_;
-
-  # Zero and name
-  my $msg = encode_int32(0) . encode_cstring($name);
-
-  # Flags
-  my $vec = pack 'B*', '0' x 32;
-  vec($vec, 0, 1) = 1 if $flags->{single_remove};
-  $msg .= encode_int32(unpack 'V', $vec);
-
-  # Query
-  $msg .= bson_encode $query;
-
-  # Header
-  return _build_header($id, length($msg), DELETE) . $msg;
-}
+use constant {REPLY => 1, QUERY => 2004, GET_MORE => 2005,
+  KILL_CURSORS => 2007};
 
 sub build_get_more {
   my ($self, $id, $name, $return, $cursor) = @_;
 
   # Zero and name
-  my $msg = encode_int32(0) . encode_cstring($name);
+  my $msg = pack('l<', 0) . encode_cstring($name);
 
   # Number to return and cursor id
-  $msg .= encode_int32($return) . encode_int64($cursor);
+  $msg .= pack('l<', $return) . pack('q<', $cursor);
 
   # Header
   return _build_header($id, length($msg), GET_MORE) . $msg;
-}
-
-sub build_insert {
-  my ($self, $id, $name, $flags) = (shift, shift, shift, shift);
-
-  # Flags
-  my $vec = pack 'B*', '0' x 32;
-  vec($vec, 0, 1) = 1 if $flags->{continue_on_error};
-  my $msg = encode_int32(unpack 'V', $vec);
-
-  # Name
-  $msg .= encode_cstring $name;
-
-  # Documents
-  $msg .= bson_encode $_ for @_;
-
-  # Header
-  return _build_header($id, length($msg), INSERT) . $msg;
 }
 
 sub build_kill_cursors {
   my ($self, $id) = (shift, shift);
 
   # Zero and number of cursor ids
-  my $msg = encode_int32(0) . encode_int32(scalar @_);
+  my $msg = pack('l<', 0) . pack('l<', scalar @_);
 
   # Cursor ids
-  $msg .= encode_int64 $_ for @_;
+  $msg .= pack 'q<', $_ for @_;
 
   # Header
   return _build_header($id, length($msg), KILL_CURSORS) . $msg;
@@ -88,13 +44,13 @@ sub build_query {
   vec($vec, 5, 1) = 1 if $flags->{await_data};
   vec($vec, 6, 1) = 1 if $flags->{exhaust};
   vec($vec, 7, 1) = 1 if $flags->{partial};
-  my $msg = encode_int32(unpack 'V', $vec);
+  my $msg = pack 'l<', unpack('V', $vec);
 
   # Name
   $msg .= encode_cstring $name;
 
   # Skip and number to return
-  $msg .= encode_int32($skip) . encode_int32($return);
+  $msg .= pack('l<', $skip) . pack('l<', $return);
 
   # Query
   $msg .= bson_encode $query;
@@ -106,29 +62,9 @@ sub build_query {
   return _build_header($id, length($msg), QUERY) . $msg;
 }
 
-sub build_update {
-  my ($self, $id, $name, $flags, $query, $update) = @_;
-
-  # Zero and name
-  my $msg = encode_int32(0) . encode_cstring($name);
-
-  # Flags
-  my $vec = pack 'B*', '0' x 32;
-  vec($vec, 0, 1) = 1 if $flags->{upsert};
-  vec($vec, 1, 1) = 1 if $flags->{multi_update};
-  $msg .= encode_int32(unpack 'V', $vec);
-
-  # Query and update specification
-  $msg .= bson_encode($query) . bson_encode($update);
-
-  # Header
-  return _build_header($id, length($msg), UPDATE) . $msg;
-}
-
 sub command_error {
-  my ($self, $reply) = @_;
-  my $doc = $reply->{docs}[0];
-  return $doc->{ok} ? $doc->{err} : $doc->{errmsg};
+  my ($self, $doc) = @_;
+  return $doc->{ok} ? undef : $doc->{errmsg};
 }
 
 sub next_id { $_[1] > 2147483646 ? 1 : $_[1] + 1 }
@@ -143,9 +79,9 @@ sub parse_reply {
   substr $msg, 0, 4, '';
 
   # Header
-  my $id = decode_int32(substr $msg, 0, 4, '');
-  my $to = decode_int32(substr $msg, 0, 4, '');
-  my $op = decode_int32(substr $msg, 0, 4, '');
+  my $id = unpack 'l<', substr($msg, 0, 4, '');
+  my $to = unpack 'l<', substr($msg, 0, 4, '');
+  my $op = unpack 'l<', substr($msg, 0, 4, '');
   return undef unless $op == REPLY;
 
   # Flags
@@ -156,10 +92,10 @@ sub parse_reply {
   $flags->{await_capable}    = 1 if vec $vec, 3, 1;
 
   # Cursor id
-  my $cursor = decode_int64(substr $msg, 0, 8, '');
+  my $cursor = unpack 'q<', substr($msg, 0, 8, '');
 
   # Starting from
-  my $from = decode_int32(substr $msg, 0, 4, '');
+  my $from = unpack 'l<', substr($msg, 0, 4, '');
 
   # Documents (remove number of documents prefix)
   substr $msg, 0, 4, '';
@@ -182,9 +118,16 @@ sub query_failure {
   return $reply->{flags}{query_failure} ? $reply->{docs}[0]{'$err'} : undef;
 }
 
+sub write_error {
+  my ($self, $doc) = @_;
+  return undef unless my $errors = $doc->{writeErrors};
+  return join "\n",
+    map {"Write error at index $_->{index}: $_->{errmsg}"} @$errors;
+}
+
 sub _build_header {
   my ($id, $length, $op) = @_;
-  return join '', map { encode_int32($_) } $length + 16, $id, 0, $op;
+  return join '', map { pack 'l<', $_ } $length + 16, $id, 0, $op;
 }
 
 1;
@@ -200,7 +143,7 @@ Mango::Protocol - The MongoDB wire protocol
   use Mango::Protocol;
 
   my $protocol = Mango::Protocol->new;
-  my $bytes    = $protocol->insert(23, 'foo.bar', {}, {foo => 'bar'});
+  my $bytes    = $protocol->query(1, 'foo', {}, 0, 10, {}, {});
 
 =head1 DESCRIPTION
 
@@ -212,23 +155,11 @@ protocol.
 L<Mango::Protocol> inherits all methods from L<Mojo::Base> and implements the
 following new ones.
 
-=head2 build_delete
-
-  my $bytes = $protocol->build_delete($id, $name, $flags, $query);
-
-Build message for C<delete> operation.
-
 =head2 build_get_more
 
   my $bytes = $protocol->build_get_more($id, $name, $return, $cursor);
 
 Build message for C<get_more> operation.
-
-=head2 build_insert
-
-  my $bytes = $protocol->build_insert($id, $name, $flags, @docs);
-
-Build message for C<insert> operation.
 
 =head2 build_kill_cursors
 
@@ -243,17 +174,11 @@ Build message for C<kill_cursors> operation.
 
 Build message for C<query> operation.
 
-=head2 build_update
-
-  my $bytes = $protocol->build_update($id, $name, $flags, $query, $update);
-
-Build message for C<update> operation.
-
 =head2 command_error
 
-  my $err = $protocol->command_error($reply);
+  my $err = $protocol->command_error($doc);
 
-Check reply for command error.
+Check document for command error.
 
 =head2 next_id
 
@@ -272,6 +197,12 @@ Extract and parse C<reply> message.
   my $err = $protocol->query_failure($reply);
 
 Check reply for query failure.
+
+=head2 write_error
+
+  my $err = $protocol->write_error($doc);
+
+Check document for write error.
 
 =head1 SEE ALSO
 
