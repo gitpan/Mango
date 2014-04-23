@@ -7,7 +7,7 @@ use Mango::Database;
 use Mango::Protocol;
 use Mojo::IOLoop;
 use Mojo::URL;
-use Mojo::Util qw(dumper md5_sum monkey_patch);
+use Mojo::Util qw(dumper md5_sum);
 use Scalar::Util 'weaken';
 
 use constant DEBUG => $ENV{MANGO_DEBUG} || 0;
@@ -24,17 +24,7 @@ has [qw(max_write_batch_size wtimeout)] => 1000;
 has protocol => sub { Mango::Protocol->new };
 has w => 1;
 
-our $VERSION = '0.30';
-
-# Operations with reply
-for my $name (qw(get_more query)) {
-  monkey_patch __PACKAGE__, $name, sub {
-    my $self = shift;
-    my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
-    my ($next, $msg) = $self->_build($name, @_);
-    $self->_start({id => $next, safe => 1, msg => $msg, cb => $cb});
-  };
-}
+our $VERSION = '0.31';
 
 sub DESTROY { shift->_cleanup }
 
@@ -79,14 +69,13 @@ sub from_string {
   return $self;
 }
 
-sub kill_cursors {
-  my $self = shift;
-  my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
-  my ($next, $msg) = $self->_build('kill_cursors', @_);
-  $self->_start({id => $next, safe => 0, msg => $msg, cb => $cb});
-}
+sub get_more { shift->_op('get_more', 1, @_) }
+
+sub kill_cursors { shift->_op('kill_cursors', 0, @_) }
 
 sub new { shift->SUPER::new->from_string(@_) }
+
+sub query { shift->_op('query', 1, @_) }
 
 sub _active {
   my $self = shift;
@@ -226,6 +215,13 @@ sub _next {
   $self->_write($_) and $start++ for @ids;
   $self->_connect
     if $op && !$start && @{$self->{queue}} && @ids < $self->max_connections;
+}
+
+sub _op {
+  my ($self, $op, $safe) = (shift, shift, shift);
+  my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
+  my ($next, $msg) = $self->_build($op, @_);
+  $self->_start({id => $next, safe => $safe, msg => $msg, cb => $cb});
 }
 
 sub _read {
