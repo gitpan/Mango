@@ -24,7 +24,7 @@ has [qw(max_write_batch_size wtimeout)] => 1000;
 has protocol => sub { Mango::Protocol->new };
 has w => 1;
 
-our $VERSION = '0.32';
+our $VERSION = '0.33';
 
 sub DESTROY { shift->_cleanup }
 
@@ -282,7 +282,7 @@ sub _start {
 sub _version {
   my ($self, $id, $err, $doc) = @_;
   return $self->_next if ($doc->{maxWireVersion} || 0) >= 2;
-  $self->_error($id, 'MongoDB wire protocol version 2 required');
+  $self->_error($id, 'MongoDB version 2.6 required');
 }
 
 sub _write {
