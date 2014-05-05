@@ -1,4 +1,7 @@
 
+0.36  2014-05-05
+  - Added support for TO_BSON method to Mango::BSON.
+
 0.35  2014-05-04
   - Added num_to_return method to Mango::Cursor.
   - Fixed bug where Mango::Cursor would request too many documents.
