@@ -1,4 +1,8 @@
 
+0.37  2014-05-12
+  - Added support for performing blocking and non-blocking operations at the
+    same time.
+
 0.36  2014-05-05
   - Added support for TO_BSON method to Mango::BSON.
 
