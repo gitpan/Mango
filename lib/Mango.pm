@@ -24,7 +24,7 @@ has [qw(max_write_batch_size wtimeout)] => 1000;
 has protocol => sub { Mango::Protocol->new };
 has w => 1;
 
-our $VERSION = '0.43';
+our $VERSION = '1.0';
 
 sub DESTROY { shift->_cleanup }
 
@@ -382,13 +382,6 @@ To learn more about MongoDB you should take a look at the
 L<official documentation|http://docs.mongodb.org>, the documentation included
 in this distribution is no replacement for it.
 
-Note that this whole distribution is EXPERIMENTAL and will change without
-warning!
-
-Most of the API is not changing much anymore, but you should wait for a stable
-1.0 release before using any of the modules in this distribution in a
-production environment.
-
 Many arguments passed to methods as well as values of attributes get
 serialized to BSON with L<Mango::BSON>, which provides many helper functions
 you can use to generate data types that are not available natively in Perl.
@@ -483,7 +476,7 @@ Wait for all operations to have reached the journal, defaults to C<0>.
   my $max = $mango->max_bson_size;
   $mango  = $mango->max_bson_size(16777216);
 
-Maximum size for BSON documents in bytes, defaults to C<16777216>.
+Maximum size for BSON documents in bytes, defaults to C<16777216> (16MB).
 
 =head2 max_connections
 
