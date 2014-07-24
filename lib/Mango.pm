@@ -24,7 +24,7 @@ has [qw(max_write_batch_size wtimeout)] => 1000;
 has protocol => sub { Mango::Protocol->new };
 has w => 1;
 
-our $VERSION = '1.01';
+our $VERSION = '1.02';
 
 sub DESTROY { shift->_cleanup }
 
@@ -140,7 +140,7 @@ sub _connect {
 
       # Connection established
       $stream->timeout($self->inactivity_timeout);
-      $stream->on(close => sub { $self->_error($id) });
+      $stream->on(close => sub { $self && $self->_error($id) });
       $stream->on(error => sub { $self && $self->_error($id, pop) });
       $stream->on(read => sub { $self->_read($id, pop) });
       $self->emit(connection => $id)->_connected($id, [@{$self->credentials}]);
@@ -336,18 +336,7 @@ Mango - Pure-Perl non-blocking I/O MongoDB driver
   my $oid = $mango->db('test')->collection('foo')
     ->insert({data => bson_bin("\x00\x01"), now => bson_time});
 
-  # Blocking concurrent find (does not work inside a running event loop)
-  my $delay = Mojo::IOLoop->delay;
-  for my $name (qw(sri marty)) {
-    my $end = $delay->begin(0);
-    $mango->db('test')->collection('users')->find({name => $name})->all(sub {
-      my ($cursor, $err, $docs) = @_;
-      $end->(@$docs);
-    });
-  }
-  my @docs = $delay->wait;
-
-  # Non-blocking concurrent find (does work inside a running event loop)
+  # Non-blocking concurrent find
   my $delay = Mojo::IOLoop->delay(sub {
     my ($delay, @docs) = @_;
     ...
@@ -359,7 +348,7 @@ Mango - Pure-Perl non-blocking I/O MongoDB driver
       $end->(@$docs);
     });
   }
-  $delay->wait unless Mojo::IOLoop->is_running;
+  $delay->wait;
 
   # Event loops such as AnyEvent are supported through EV
   use EV;
