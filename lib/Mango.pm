@@ -24,7 +24,7 @@ has [qw(max_write_batch_size wtimeout)] => 1000;
 has protocol => sub { Mango::Protocol->new };
 has w => 1;
 
-our $VERSION = '1.02';
+our $VERSION = '1.03';
 
 sub DESTROY { shift->_cleanup }
 
@@ -77,24 +77,16 @@ sub new { shift->SUPER::new->from_string(@_) }
 
 sub query { shift->_op('query', 1, @_) }
 
-sub _active {
-  my $self = shift;
-  return 1 if $self->backlog;
-  return !!grep { $_->{last} && !$_->{start} }
-    values %{$self->{connections} || {}};
-}
-
 sub _auth {
-  my ($self, $id, $credentials, $auth, $err, $doc) = @_;
-  my ($db, $user, $pass) = @$auth;
+  my ($self, $id) = @_;
 
-  # Run "authenticate" command with "nonce" value
-  my $nonce = $doc->{nonce} // '';
-  my $key = md5_sum $nonce . $user . md5_sum "$user:mongo:$pass";
-  my $command
-    = bson_doc(authenticate => 1, user => $user, nonce => $nonce, key => $key);
-  my $cb = sub { shift->_connected($id, $credentials) };
-  $self->_fast($id, $db, $command, $cb);
+  # No authentication
+  return $self->emit(connection => $id)->_next
+    unless my $auth = shift @{$self->{connections}{$id}{credentials}};
+
+  # Run "getnonce" command followed by "authenticate"
+  my $cb = sub { shift->_nonce($id, $auth, @_) };
+  $self->_fast($id, $auth->[0], {getnonce => 1}, $cb);
 }
 
 sub _build {
@@ -132,37 +124,31 @@ sub _connect {
       my ($loop, $err, $stream) = @_;
 
       # Connection error (try next server)
-      if ($err) {
-        return $self->_error($id, $err) unless @$hosts;
-        delete $self->{connections}{$id};
-        return $self->_connect($nb, $hosts);
-      }
+      return $self->_connect_again($id, $nb, $hosts, $err) if $err;
 
       # Connection established
       $stream->timeout($self->inactivity_timeout);
       $stream->on(close => sub { $self && $self->_error($id) });
       $stream->on(error => sub { $self && $self->_error($id, pop) });
       $stream->on(read => sub { $self->_read($id, pop) });
-      $self->emit(connection => $id)->_connected($id, [@{$self->credentials}]);
+
+      # Check version with "isMaster" command
+      my $cb = sub { shift->_master($id, $nb, $hosts, @_) };
+      $self->_fast($id, $self->default_db, {isMaster => 1}, $cb);
     }
   );
-  $self->{connections}{$id} = {nb => $nb, start => 1};
+  $self->{connections}{$id}
+    = {credentials => [@{$self->credentials}], nb => $nb, start => 1};
 
   my $num = scalar keys %{$self->{connections}};
   warn "-- New connection ($host:$port:$num)\n" if DEBUG;
 }
 
-sub _connected {
-  my ($self, $id, $credentials) = @_;
-
-  # No authentication (check version with "isMaster" command)
-  my $cb = sub { shift->_version($id, @_) };
-  return $self->_fast($id, $self->default_db, {isMaster => 1}, $cb)
-    unless my $auth = shift @$credentials;
-
-  # Run "getnonce" command followed by "authenticate"
-  $cb = sub { shift->_auth($id, $credentials, $auth, @_) };
-  $self->_fast($id, $auth->[0], {getnonce => 1}, $cb);
+sub _connect_again {
+  my ($self, $id, $nb, $hosts, $err) = @_;
+  return $self->_error($id, $err) unless @$hosts;
+  delete $self->{connections}{$id};
+  $self->_connect($nb, $hosts);
 }
 
 sub _error {
@@ -180,11 +166,10 @@ sub _fast {
   my ($self, $id, $db, $command, $cb) = @_;
 
   # Handle errors
-  my $protocol = $self->protocol;
-  my $wrapper  = sub {
+  my $wrapper = sub {
     my ($self, $err, $reply) = @_;
     my $doc = $reply->{docs}[0];
-    $err ||= $protocol->command_error($doc);
+    $err ||= $self->protocol->command_error($doc);
     return $err ? $self->_error($id, $err) : $self->$cb($err, $doc);
   };
 
@@ -205,6 +190,21 @@ sub _id { $_[0]{id} = $_[0]->protocol->next_id($_[0]{id} // 0) }
 
 sub _loop { $_[1] ? Mojo::IOLoop->singleton : $_[0]->ioloop }
 
+sub _master {
+  my ($self, $id, $nb, $hosts, $err, $doc) = @_;
+
+  # Check version
+  return $self->_error($id, 'MongoDB version 2.6 required')
+    unless ($doc->{maxWireVersion} || 0) >= 2;
+
+  # Continue with authentication if we are connected to the primary
+  return $self->_auth($id) if $doc->{ismaster};
+
+  # Get primary and try to connect again
+  unshift @$hosts, [$1, $2] if ($doc->{primary} // '') =~ /^(.+):(\d+)$/;
+  $self->_connect_again($id, $nb, $hosts, "Couldn't find primary node");
+}
+
 sub _next {
   my ($self, $op) = @_;
 
@@ -223,6 +223,18 @@ sub _next {
   # Non-blocking
   $self->_connect(1)
     if !$start && @{$self->{queue}} && @ids < $self->max_connections;
+}
+
+sub _nonce {
+  my ($self, $id, $auth, $err, $doc) = @_;
+  my ($db, $user, $pass) = @$auth;
+
+  # Run "authenticate" command with "nonce" value
+  my $nonce = $doc->{nonce} // '';
+  my $key = md5_sum $nonce . $user . md5_sum "$user:mongo:$pass";
+  my $command
+    = bson_doc(authenticate => 1, user => $user, nonce => $nonce, key => $key);
+  $self->_fast($id, $db, $command, sub { shift->_auth($id) });
 }
 
 sub _op {
@@ -264,12 +276,6 @@ sub _start {
   croak $err if $err;
 
   return $reply;
-}
-
-sub _version {
-  my ($self, $id, $err, $doc) = @_;
-  return $self->_next if ($doc->{maxWireVersion} || 0) >= 2;
-  $self->_error($id, 'MongoDB version 2.6 required');
 }
 
 sub _write {
