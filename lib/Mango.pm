@@ -24,7 +24,7 @@ has [qw(max_write_batch_size wtimeout)] => 1000;
 has protocol => sub { Mango::Protocol->new };
 has w => 1;
 
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 sub DESTROY { shift->_cleanup }
 
@@ -80,7 +80,7 @@ sub query { shift->_op('query', 1, @_) }
 sub _auth {
   my ($self, $id) = @_;
 
-  # No authentication
+  # No more authentication (connection is ready)
   return $self->emit(connection => $id)->_next
     unless my $auth = shift @{$self->{connections}{$id}{credentials}};
 
@@ -113,10 +113,19 @@ sub _cleanup {
   $self->_finish(undef, $_->{cb}, 'Premature connection close') for @$queue;
 }
 
+sub _close {
+  my ($self, $id) = @_;
+
+  return unless my $c = delete $self->{connections}{$id};
+  my $last = $c->{last};
+  $self->_finish(undef, $last->{cb}, 'Premature connection close') if $last;
+  $self->_connect($c->{nb}) if @{$self->{queue}};
+}
+
 sub _connect {
   my ($self, $nb, $hosts) = @_;
-  my ($host, $port) = @{shift @{$hosts ||= [@{$self->hosts}]}};
 
+  my ($host, $port) = @{shift @{$hosts ||= [@{$self->hosts}]}};
   weaken $self;
   my $id;
   $id = $self->_loop($nb)->client(
@@ -124,16 +133,20 @@ sub _connect {
       my ($loop, $err, $stream) = @_;
 
       # Connection error (try next server)
-      return $self->_connect_again($id, $nb, $hosts, $err) if $err;
+      if ($err) {
+        return $self->_error($id, $err) unless @$hosts;
+        delete $self->{connections}{$id};
+        return $self->_connect($nb, $hosts);
+      }
 
       # Connection established
       $stream->timeout($self->inactivity_timeout);
-      $stream->on(close => sub { $self && $self->_error($id) });
+      $stream->on(close => sub { $self && $self->_close($id) });
       $stream->on(error => sub { $self && $self->_error($id, pop) });
       $stream->on(read => sub { $self->_read($id, pop) });
 
-      # Check version with "isMaster" command
-      my $cb = sub { shift->_master($id, $nb, $hosts, @_) };
+      # Check node information with "isMaster" command
+      my $cb = sub { shift->_master($id, $nb, $hosts, pop) };
       $self->_fast($id, $self->default_db, {isMaster => 1}, $cb);
     }
   );
@@ -144,22 +157,15 @@ sub _connect {
   warn "-- New connection ($host:$port:$num)\n" if DEBUG;
 }
 
-sub _connect_again {
-  my ($self, $id, $nb, $hosts, $err) = @_;
-  return $self->_error($id, $err) unless @$hosts;
-  delete $self->{connections}{$id};
-  $self->_connect($nb, $hosts);
-}
-
 sub _error {
   my ($self, $id, $err) = @_;
 
-  my $c    = delete $self->{connections}{$id};
-  my $last = $c->{last};
-  $last //= shift @{$self->{queue}} if $err;
-  $self->_connect($c->{nb}) if @{$self->{queue}};
-  return $err ? $self->emit(error => $err) : $self unless $last;
-  $self->_finish(undef, $last->{cb}, $err || 'Premature connection close');
+  return unless my $c = delete $self->{connections}{$id};
+  $self->_loop($c->{nb})->remove($id);
+
+  my $last = $c->{last} // shift @{$self->{queue}};
+  if ($last) { $self->_finish(undef, $last->{cb}, $err) }
+  else       { $self->emit(error => $err) }
 }
 
 sub _fast {
@@ -168,9 +174,13 @@ sub _fast {
   # Handle errors
   my $wrapper = sub {
     my ($self, $err, $reply) = @_;
+
     my $doc = $reply->{docs}[0];
     $err ||= $self->protocol->command_error($doc);
-    return $err ? $self->_error($id, $err) : $self->$cb($err, $doc);
+    return $self->$cb(undef, $doc) unless $err;
+
+    return unless my $last = shift @{$self->{queue}};
+    $self->_finish(undef, $last->{cb}, $err);
   };
 
   # Skip the queue and run command right away
@@ -191,7 +201,7 @@ sub _id { $_[0]{id} = $_[0]->protocol->next_id($_[0]{id} // 0) }
 sub _loop { $_[1] ? Mojo::IOLoop->singleton : $_[0]->ioloop }
 
 sub _master {
-  my ($self, $id, $nb, $hosts, $err, $doc) = @_;
+  my ($self, $id, $nb, $hosts, $doc) = @_;
 
   # Check version
   return $self->_error($id, 'MongoDB version 2.6 required')
@@ -202,35 +212,37 @@ sub _master {
 
   # Get primary and try to connect again
   unshift @$hosts, [$1, $2] if ($doc->{primary} // '') =~ /^(.+):(\d+)$/;
-  $self->_connect_again($id, $nb, $hosts, "Couldn't find primary node");
+  return $self->_error($id, "Couldn't find primary node") unless @$hosts;
+  delete $self->{connections}{$id};
+  $self->_loop($nb)->remove($id);
+  $self->_connect($nb, $hosts);
 }
 
 sub _next {
   my ($self, $op) = @_;
 
+  # Make sure all connections are saturated
   push @{$self->{queue} ||= []}, $op if $op;
-
   my $connections = $self->{connections};
-  my @ids         = keys %$connections;
   my $start;
-  $self->_write($_) and $start++ for @ids;
-  return unless $op;
+  $self->_write($_) and $start++ for my @ids = keys %$connections;
 
-  # Blocking
+  # Check if we need a blocking connection
+  return unless $op;
   return $self->_connect(0)
     if !$op->{nb} && !grep { !$connections->{$_}{nb} } @ids;
 
-  # Non-blocking
+  # Check if we need more non-blocking connections
   $self->_connect(1)
     if !$start && @{$self->{queue}} && @ids < $self->max_connections;
 }
 
 sub _nonce {
   my ($self, $id, $auth, $err, $doc) = @_;
-  my ($db, $user, $pass) = @$auth;
 
   # Run "authenticate" command with "nonce" value
   my $nonce = $doc->{nonce} // '';
+  my ($db, $user, $pass) = @$auth;
   my $key = md5_sum $nonce . $user . md5_sum "$user:mongo:$pass";
   my $command
     = bson_doc(authenticate => 1, user => $user, nonce => $nonce, key => $key);
@@ -267,15 +279,12 @@ sub _start {
   # Non-blocking
   return $self->_next($op) if $op->{cb};
 
+  # Blocking
   my ($err, $reply);
   $op->{cb} = sub { shift->ioloop->stop; ($err, $reply) = @_ };
   $self->_next($op);
   $self->ioloop->start;
-
-  # Throw blocking errors
-  croak $err if $err;
-
-  return $reply;
+  return $err ? croak $err : $reply;
 }
 
 sub _write {
