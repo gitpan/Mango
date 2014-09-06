@@ -11,6 +11,7 @@ lib/Mango/BSON/Timestamp.pm
 lib/Mango/Bulk.pm
 lib/Mango/Collection.pm
 lib/Mango/Cursor.pm
+lib/Mango/Cursor/Query.pm
 lib/Mango/Database.pm
 lib/Mango/GridFS.pm
 lib/Mango/GridFS/Reader.pm
