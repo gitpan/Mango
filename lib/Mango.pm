@@ -24,7 +24,7 @@ has [qw(max_write_batch_size wtimeout)] => 1000;
 has protocol => sub { Mango::Protocol->new };
 has w => 1;
 
-our $VERSION = '1.11';
+our $VERSION = '1.12';
 
 sub DESTROY { shift->_cleanup }
 
@@ -164,8 +164,7 @@ sub _error {
   $self->_loop($c->{nb})->remove($id);
 
   my $last = $c->{last} // shift @{$self->{queue}};
-  if ($last) { $self->_finish(undef, $last->{cb}, $err) }
-  else       { $self->emit(error => $err) }
+  $self->_finish(undef, $last->{cb}, $err) if $last;
 }
 
 sub _fast {
@@ -303,7 +302,7 @@ sub _write {
   # Fast operation
   delete $c->{start} unless my $last = delete $c->{fast};
 
-  # Blocking operations have precedence
+  # Blocking operations have a higher precedence
   return $c->{start}
     unless $last || ($c->{nb} xor !($self->{queue}->[-1] || {})->{nb});
   $last ||= $c->{nb} ? shift @{$self->{queue}} : pop @{$self->{queue}};
@@ -412,20 +411,6 @@ following new ones.
   });
 
 Emitted when a new connection has been established.
-
-=head2 error
-
-  $mango->on(error => sub {
-    my ($mango, $err) = @_;
-    ...
-  });
-
-Emitted if an error occurs that can't be associated with an operation.
-
-  $mango->on(error => sub {
-    my ($mango, $err) = @_;
-    say "This looks bad: $err";
-  });
 
 =head1 ATTRIBUTES
 

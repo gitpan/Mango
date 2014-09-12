@@ -33,7 +33,7 @@
       },
       "runtime" : {
          "requires" : {
-            "Mojolicious" : "5.33",
+            "Mojolicious" : "5.40",
             "perl" : "5.010001"
          }
       }
@@ -52,5 +52,5 @@
       },
       "x_MailingList" : "http://groups.google.com/group/mojolicious"
    },
-   "version" : "1.11"
+   "version" : "1.12"
 }
