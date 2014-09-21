@@ -40,17 +40,8 @@
    },
    "release_status" : "stable",
    "resources" : {
-      "bugtracker" : {
-         "web" : "http://github.com/kraih/mango/issues"
-      },
       "homepage" : "http://mojolicio.us",
-      "license" : [
-         "http://www.opensource.org/licenses/artistic-license-2.0"
-      ],
-      "repository" : {
-         "url" : "http://github.com/kraih/mango"
-      },
-      "x_MailingList" : "http://groups.google.com/group/mojolicious"
+      "x_IRC" : "irc://irc.perl.org/#mojo"
    },
-   "version" : "1.12"
+   "version" : "1.13"
 }
