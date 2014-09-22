@@ -23,5 +23,8 @@ requires:
   perl: '5.010001'
 resources:
   IRC: irc://irc.perl.org/#mojo
+  bugtracker: https://github.com/kraih/mango/issues
   homepage: http://mojolicio.us
-version: '1.13'
+  license: http://www.opensource.org/licenses/artistic-license-2.0
+  repository: https://github.com/kraih/mango.git
+version: '1.14'
